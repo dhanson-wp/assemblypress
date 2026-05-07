@@ -1,0 +1,24 @@
+.DS_Store
+
+# Local/editor state
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Dependencies
+node_modules/
+vendor/
+
+# Build artifacts
+build/
+dist/
+coverage/
+
+# WordPress/local environment artifacts
+.wp-env.json
+.wp-env.override.json
+wp-content/uploads/
+
+# Project scratch/output artifacts
+outputs/
