@@ -24,4 +24,4 @@ AssemblyPress is in early product and architecture definition. The repo intentio
 
 ## License
 
-License decision is pending. AssemblyPress is intended to be open source and WordPress-compatible.
+AssemblyPress is licensed under the GNU General Public License v2.0 or later. See [LICENSE](LICENSE).
