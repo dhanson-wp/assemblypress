@@ -14,11 +14,12 @@ vendor/
 build/
 dist/
 coverage/
+.phpunit.result.cache
 
 # WordPress/local environment artifacts
-.wp-env.json
 .wp-env.override.json
 wp-content/uploads/
 
 # Project scratch/output artifacts
 outputs/
+artifacts/

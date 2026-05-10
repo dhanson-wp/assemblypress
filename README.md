@@ -20,7 +20,18 @@ Everything inside the product should feel like modern core WordPress.
 
 ## Current Status
 
-AssemblyPress is in early product and architecture definition. The repo intentionally starts with documentation before plugin scaffolding, package setup, or WordPress Studio configuration.
+AssemblyPress now has its first plugin scaffold for native member profiles, profile fields, profile forms, and member directories.
+
+The first implementation slice includes:
+
+- private AssemblyPress profile field, field group, and form configuration entities
+- registered user meta for member profile values
+- `assemblypress/v1` REST routes for fields, forms, members, and the current member profile
+- dynamic blocks for member directory, member profile, profile field, and edit profile form
+- an AssemblyPress admin screen with members, profile fields, and profile forms tabs
+- `@wordpress/scripts`, `wp-env`, PHPCS, PHPUnit bootstrap, and Playwright E2E scaffolding
+
+Local WordPress development runs through `wp-env` on `http://localhost:8890`.
 
 ## License
 

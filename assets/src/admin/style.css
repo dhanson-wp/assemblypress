@@ -1,0 +1,135 @@
+@import "@wordpress/dataviews/build-style/style.css";
+
+body.toplevel_page_assemblypress,
+body.toplevel_page_assemblypress #wpwrap,
+body.toplevel_page_assemblypress #wpcontent,
+body.toplevel_page_assemblypress #wpbody,
+body.toplevel_page_assemblypress #wpbody-content,
+body.toplevel_page_assemblypress #wpfooter {
+	background: #fff;
+}
+
+body.toplevel_page_assemblypress #wpbody,
+body.toplevel_page_assemblypress #wpbody-content {
+	min-height: calc(100vh - 32px);
+}
+
+body.toplevel_page_assemblypress #wpcontent {
+	padding-left: 0;
+}
+
+.assemblypress-admin {
+	box-sizing: border-box;
+	margin: 0;
+	padding: 48px 56px 64px;
+	width: 100%;
+}
+
+.assemblypress-admin__header {
+	align-items: flex-start;
+	display: flex;
+	gap: 24px;
+	justify-content: space-between;
+	margin-bottom: 24px;
+}
+
+.assemblypress-admin .dataviews-wrapper {
+	width: 100%;
+}
+
+.assemblypress-admin .dataviews__view-actions {
+	padding-left: 0;
+	padding-right: 0;
+}
+
+.assemblypress-admin .dataviews-footer {
+	padding-left: 8px;
+	padding-right: 0;
+}
+
+.assemblypress-admin .dataviews-view-table tr td:first-child,
+.assemblypress-admin .dataviews-view-table tr th:first-child {
+	padding-left: 8px;
+}
+
+.assemblypress-admin .dataviews-view-table tr td:last-child,
+.assemblypress-admin .dataviews-view-table tr th:last-child {
+	padding-right: 0;
+}
+
+.assemblypress-admin__header h1 {
+	font-size: 23px;
+	font-weight: 400;
+	line-height: 1.3;
+	margin: 0 0 6px;
+	padding: 0;
+}
+
+.assemblypress-admin__header p {
+	color: #50575e;
+	font-size: 13px;
+	line-height: 1.5;
+	margin: 0;
+	max-width: 680px;
+}
+
+.assemblypress-admin__loading {
+	align-items: center;
+	display: flex;
+	gap: 8px;
+	padding: 24px;
+}
+
+.assemblypress-field-badge {
+	align-items: center;
+	background: #f0f0f0;
+	border: 1px solid #dcdcde;
+	border-radius: 2px;
+	color: #50575e;
+	display: inline-flex;
+	font-size: 11px;
+	font-weight: 500;
+	line-height: 1.4;
+	padding: 1px 6px;
+	vertical-align: middle;
+	white-space: nowrap;
+}
+
+.assemblypress-field-badge--system {
+	background: #f0f6fc;
+	border-color: #c5d9ed;
+	color: #0a4b78;
+}
+
+.assemblypress-field-badge--custom {
+	background: #f6f7f7;
+	color: #50575e;
+}
+
+.assemblypress-field-modal .components-modal__content {
+	padding-bottom: 0;
+}
+
+.assemblypress-field-modal__footer {
+	align-items: center;
+	background: #fff;
+	border-top: 1px solid #e0e0e0;
+	display: flex;
+	gap: 8px;
+	justify-content: flex-end;
+	margin: 24px -32px 0;
+	padding: 16px 32px;
+	position: sticky;
+	bottom: 0;
+}
+
+@media (max-width: 782px) {
+	.assemblypress-admin {
+		padding: 24px 16px 40px;
+	}
+
+	.assemblypress-admin__header {
+		align-items: stretch;
+		flex-direction: column;
+	}
+}

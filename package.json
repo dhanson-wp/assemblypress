@@ -1,0 +1,25 @@
+{
+	"name": "@assemblypress/plugin",
+	"version": "0.1.0",
+	"description": "A block-native community platform for WordPress.",
+	"private": true,
+	"license": "GPL-2.0-or-later",
+	"scripts": {
+		"build": "wp-scripts build assets/src/admin/index.js --output-path=assets/build/admin",
+		"start": "wp-scripts start assets/src/admin/index.js --output-path=assets/build/admin",
+		"lint:js": "wp-scripts lint-js assets/js assets/src blocks",
+		"lint:css": "wp-scripts lint-style '**/*.css'",
+		"test:e2e": "WP_BASE_URL=http://localhost:8890 wp-scripts test-playwright",
+		"wp-env": "wp-env"
+	},
+	"devDependencies": {
+		"@playwright/test": "^1.59.1",
+		"@wordpress/e2e-test-utils-playwright": "^1.45.0",
+		"@wordpress/env": "^10.39.0",
+		"@wordpress/scripts": "^30.6.2"
+	},
+	"dependencies": {
+		"@wordpress/dataviews": "^14.2.0",
+		"@wordpress/icons": "^13.0.0"
+	}
+}

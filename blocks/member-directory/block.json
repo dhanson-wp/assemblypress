@@ -1,0 +1,28 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "assemblypress/member-directory",
+	"title": "Member Directory",
+	"category": "widgets",
+	"icon": "groups",
+	"description": "Display a directory of AssemblyPress members.",
+	"textdomain": "assemblypress",
+	"attributes": {
+		"perPage": {
+			"type": "number",
+			"default": 12
+		}
+	},
+	"supports": {
+		"align": [ "wide", "full" ],
+		"spacing": {
+			"margin": true,
+			"padding": true
+		},
+		"typography": {
+			"fontSize": true
+		}
+	},
+	"editorScript": "file:./index.js",
+	"render": "file:./render.php"
+}
