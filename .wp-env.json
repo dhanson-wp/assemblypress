@@ -1,0 +1,15 @@
+{
+	"core": "WordPress/WordPress#master",
+	"mappings": {
+		"wp-content/plugins/assemblypress": "."
+	},
+	"port": 8890,
+	"testsPort": 8999,
+	"lifecycleScripts": {
+		"afterStart": "for SERVICE in cli tests-cli; do wp-env run \"$SERVICE\" wp plugin activate assemblypress; done"
+	},
+	"config": {
+		"WP_DEBUG": true,
+		"SCRIPT_DEBUG": true
+	}
+}

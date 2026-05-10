@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<ruleset name="AssemblyPress">
+	<description>AssemblyPress coding standards.</description>
+	<file>assemblypress.php</file>
+	<file>includes</file>
+	<rule ref="WordPress"/>
+	<rule ref="WordPress-Extra"/>
+	<rule ref="PHPCompatibilityWP"/>
+	<config name="testVersion" value="7.4-"/>
+	<arg value="ps"/>
+	<exclude-pattern>vendor/*</exclude-pattern>
+	<exclude-pattern>node_modules/*</exclude-pattern>
+</ruleset>

@@ -1,0 +1,22 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "assemblypress/edit-profile-form",
+	"title": "Edit Profile Form",
+	"category": "widgets",
+	"icon": "feedback",
+	"description": "Display a native AssemblyPress profile editing form.",
+	"textdomain": "assemblypress",
+	"supports": {
+		"align": [ "wide", "full" ],
+		"spacing": {
+			"margin": true,
+			"padding": true
+		},
+		"typography": {
+			"fontSize": true
+		}
+	},
+	"editorScript": "file:./index.js",
+	"render": "file:./render.php"
+}

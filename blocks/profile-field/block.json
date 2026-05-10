@@ -1,0 +1,31 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "assemblypress/profile-field",
+	"title": "Profile Field",
+	"category": "widgets",
+	"icon": "excerpt-view",
+	"description": "Display one AssemblyPress profile field.",
+	"textdomain": "assemblypress",
+	"attributes": {
+		"fieldKey": {
+			"type": "string",
+			"default": "bio"
+		},
+		"userId": {
+			"type": "number",
+			"default": 0
+		}
+	},
+	"supports": {
+		"spacing": {
+			"margin": true,
+			"padding": true
+		},
+		"typography": {
+			"fontSize": true
+		}
+	},
+	"editorScript": "file:./index.js",
+	"render": "file:./render.php"
+}
