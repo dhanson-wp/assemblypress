@@ -133,11 +133,13 @@ final class Profile_Fields {
 	}
 
 	/**
-	 * Seed default field group, fields, and form.
+	 * Seed default field groups and fields.
 	 *
 	 * @return void
 	 */
 	public static function seed_defaults() {
+		Profile_Field_Groups::ensure_starter_groups();
+
 		if ( get_posts(
 			array(
 				'post_type'      => Config_Entities::FIELD_POST_TYPE,
@@ -148,25 +150,12 @@ final class Profile_Fields {
 			return;
 		}
 
-		$group_id = wp_insert_post(
-			array(
-				'post_type'    => Config_Entities::FIELD_GROUP_POST_TYPE,
-				'post_title'   => __( 'Profile', 'assemblypress' ),
-				'post_name'    => 'profile',
-				'post_status'  => 'publish',
-				'post_content' => wp_json_encode(
-					array(
-						'key'   => 'profile',
-						'order' => 10,
-					)
-				),
-			)
-		);
+		$groups_by_key = self::groups_by_key();
+		$field_map     = Profile_Field_Groups::starter_field_map();
 
-		$field_keys = array();
 		foreach ( self::default_fields() as $field ) {
-			$field['group_id'] = $group_id;
-			$field_keys[]      = $field['key'];
+			$group_key         = $field_map[ $field['key'] ] ?? '';
+			$field['group_id'] = isset( $groups_by_key[ $group_key ] ) ? (int) $groups_by_key[ $group_key ]['id'] : Profile_Field_Groups::get_default_group_id();
 			wp_insert_post(
 				array(
 					'post_type'    => Config_Entities::FIELD_POST_TYPE,
@@ -178,23 +167,6 @@ final class Profile_Fields {
 				)
 			);
 		}
-
-		wp_insert_post(
-			array(
-				'post_type'    => Config_Entities::FORM_POST_TYPE,
-				'post_title'   => __( 'Edit Profile', 'assemblypress' ),
-				'post_name'    => 'edit-profile',
-				'post_status'  => 'publish',
-				'post_content' => wp_json_encode(
-					array(
-						'key'         => 'edit-profile',
-						'type'        => 'profile_edit',
-						'field_keys'  => $field_keys,
-						'submit_text' => __( 'Save profile', 'assemblypress' ),
-					)
-				),
-			)
-		);
 	}
 
 	/**
@@ -230,6 +202,75 @@ final class Profile_Fields {
 		}
 
 		return $fields;
+	}
+
+	/**
+	 * Assign known fields to starter groups.
+	 *
+	 * @return void
+	 */
+	public static function assign_starter_groups_to_known_fields() {
+		$groups_by_key = self::groups_by_key();
+		$field_map     = Profile_Field_Groups::starter_field_map();
+
+		if ( empty( $groups_by_key ) ) {
+			return;
+		}
+
+		$valid_group_ids = array_map(
+			static function ( $group ) {
+				return (int) $group['id'];
+			},
+			$groups_by_key
+		);
+		$fallback_id     = Profile_Field_Groups::get_default_group_id();
+
+		$posts = get_posts(
+			array(
+				'post_type'      => Config_Entities::FIELD_POST_TYPE,
+				'posts_per_page' => -1,
+				'post_status'    => 'publish',
+			)
+		);
+
+		foreach ( $posts as $post ) {
+			$field = self::field_from_post( $post );
+
+			if ( isset( $field_map[ $field['key'] ], $groups_by_key[ $field_map[ $field['key'] ] ] ) ) {
+				$next_group_id = (int) $groups_by_key[ $field_map[ $field['key'] ] ]['id'];
+			} elseif ( ! in_array( (int) $field['group_id'], $valid_group_ids, true ) ) {
+				$next_group_id = $fallback_id;
+			} else {
+				continue;
+			}
+
+			if ( (int) $field['group_id'] === $next_group_id ) {
+				continue;
+			}
+
+			$field['group_id'] = $next_group_id;
+			wp_update_post(
+				array(
+					'ID'           => $post->ID,
+					'post_content' => wp_json_encode( $field ),
+				)
+			);
+		}
+	}
+
+	/**
+	 * Get starter groups keyed by group key.
+	 *
+	 * @return array
+	 */
+	private static function groups_by_key() {
+		$groups = array();
+
+		foreach ( Profile_Field_Groups::get_groups() as $group ) {
+			$groups[ $group['key'] ] = $group;
+		}
+
+		return $groups;
 	}
 
 	/**
@@ -341,6 +382,7 @@ final class Profile_Fields {
 	 */
 	public static function create_field( $field ) {
 		$field = self::normalize_field( $field );
+		$field = self::ensure_valid_group( $field );
 
 		if ( empty( $field['key'] ) ) {
 			return new WP_Error( 'assemblypress_missing_field_key', __( 'Field key is required.', 'assemblypress' ), array( 'status' => 400 ) );
@@ -386,6 +428,7 @@ final class Profile_Fields {
 
 		$existing_field = self::field_from_post( $post );
 		$field          = self::normalize_field( array_merge( array( 'id' => $field_id ), $field ) );
+		$field          = self::ensure_valid_group( $field );
 
 		if ( self::is_system_field( $existing_field ) ) {
 			foreach ( self::PROTECTED_FIELD_PROPERTIES as $property ) {
@@ -483,6 +526,22 @@ final class Profile_Fields {
 	}
 
 	/**
+	 * Ensure a field has a valid group assignment.
+	 *
+	 * @param array $field Field definition.
+	 * @return array
+	 */
+	private static function ensure_valid_group( $field ) {
+		if ( $field['group_id'] && Profile_Field_Groups::get_group_by_id( $field['group_id'] ) ) {
+			return $field;
+		}
+
+		$field['group_id'] = Profile_Field_Groups::get_default_group_id();
+
+		return $field;
+	}
+
+	/**
 	 * Register REST-exposed user meta for custom field values.
 	 *
 	 * @return void
@@ -565,7 +624,55 @@ final class Profile_Fields {
 			'avatar_url'   => get_avatar_url( $user->ID ),
 			'profile_url'  => get_author_posts_url( $user->ID ),
 			'fields'       => $fields,
+			'groups'       => self::group_fields( $fields ),
 		);
+	}
+
+	/**
+	 * Group fields for profile responses and rendering.
+	 *
+	 * @param array $fields Field definitions.
+	 * @return array
+	 */
+	public static function group_fields( $fields ) {
+		$grouped = array();
+
+		foreach ( Profile_Field_Groups::get_groups() as $group ) {
+			$group_fields = array_values(
+				array_filter(
+					$fields,
+					static function ( $field ) use ( $group ) {
+						return (int) $field['group_id'] === (int) $group['id'];
+					}
+				)
+			);
+
+			usort(
+				$group_fields,
+				static function ( $a, $b ) {
+					$order_compare = (int) $a['order'] <=> (int) $b['order'];
+
+					if ( 0 !== $order_compare ) {
+						return $order_compare;
+					}
+
+					return strcmp( $a['label'], $b['label'] );
+				}
+			);
+
+			if ( empty( $group_fields ) ) {
+				continue;
+			}
+
+			$grouped[] = array_merge(
+				$group,
+				array(
+					'fields' => $group_fields,
+				)
+			);
+		}
+
+		return $grouped;
 	}
 
 	/**

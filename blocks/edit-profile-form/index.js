@@ -9,8 +9,8 @@
 			return el(
 				'div',
 				useBlockProps(),
-				el( 'strong', {}, __( 'Edit Profile Form', 'assemblypress' ) ),
-				el( 'p', {}, __( 'Displays editable AssemblyPress profile fields for the logged-in member.', 'assemblypress' ) )
+				el( 'strong', {}, __( 'Profile Value Editor', 'assemblypress' ) ),
+				el( 'p', {}, __( 'Temporary surface for testing editable AssemblyPress profile values.', 'assemblypress' ) )
 			);
 		},
 		save: function () {

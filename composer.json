@@ -14,7 +14,8 @@
 	},
 	"scripts": {
 		"lint": "phpcs",
-		"test": "phpunit"
+		"test": "npx wp-env run tests-cli bash -lc 'cd /var/www/html/wp-content/plugins/assemblypress && vendor/bin/phpunit -c phpunit.xml.dist'",
+		"test:local": "phpunit"
 	},
 	"config": {
 		"allow-plugins": {

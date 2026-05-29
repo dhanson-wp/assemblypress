@@ -86,16 +86,28 @@ final class Blocks {
 		$output             = '<article ' . $wrapper_attributes . '>';
 		$output            .= get_avatar( $profile['id'], 96, '', '', array( 'class' => 'assemblypress-member-profile__avatar' ) );
 		$output            .= '<h2 class="assemblypress-member-profile__name">' . esc_html( $profile['display_name'] ) . '</h2>';
-		$output            .= '<dl class="assemblypress-member-profile__fields">';
 
-		foreach ( $profile['fields'] as $field ) {
-			if ( 'display_name' === $field['key'] || Profile_Fields::sanitize_value( $field['value'], $field ) === '' ) {
+		foreach ( $profile['groups'] as $group ) {
+			$group_output = '';
+
+			foreach ( $group['fields'] as $field ) {
+				if ( 'display_name' === $field['key'] || Profile_Fields::sanitize_value( $field['value'], $field ) === '' ) {
+					continue;
+				}
+				$group_output .= self::render_field_definition( $field );
+			}
+
+			if ( '' === $group_output ) {
 				continue;
 			}
-			$output .= self::render_field_definition( $field );
+
+			$output .= '<section class="assemblypress-member-profile__group">';
+			$output .= '<h3 class="assemblypress-member-profile__group-title">' . esc_html( $group['label'] ) . '</h3>';
+			$output .= '<dl class="assemblypress-member-profile__fields">' . $group_output . '</dl>';
+			$output .= '</section>';
 		}
 
-		$output .= '</dl></article>';
+		$output .= '</article>';
 		return $output;
 	}
 
@@ -120,7 +132,7 @@ final class Blocks {
 	}
 
 	/**
-	 * Render the edit profile form block.
+	 * Render the temporary profile value editing test surface.
 	 *
 	 * @return string
 	 */
@@ -133,7 +145,7 @@ final class Blocks {
 		$fields = array_filter(
 			Profile_Fields::get_fields(),
 			static function ( $field ) {
-				return ! empty( $field['editable'] );
+				return ! empty( $field['editable'] ) && 'social_links' !== $field['type'];
 			}
 		);
 
@@ -148,13 +160,18 @@ final class Blocks {
 		}
 
 		$output = '<form method="post" ' . get_block_wrapper_attributes( array( 'class' => 'assemblypress-edit-profile-form' ) ) . '>';
-		foreach ( $fields as $field ) {
-			$value   = Profile_Fields::get_value( $user, $field );
-			$name    = 'assemblypress_' . $field['key'];
-			$output .= '<p class="assemblypress-edit-profile-form__field">';
-			$output .= '<label for="' . esc_attr( $name ) . '">' . esc_html( $field['label'] ) . '</label>';
-			$output .= self::render_input( $name, $field, $value );
-			$output .= '</p>';
+		foreach ( Profile_Fields::group_fields( $fields ) as $group ) {
+			$output .= '<fieldset class="assemblypress-edit-profile-form__group">';
+			$output .= '<legend>' . esc_html( $group['label'] ) . '</legend>';
+			foreach ( $group['fields'] as $field ) {
+				$value   = Profile_Fields::get_value( $user, $field );
+				$name    = 'assemblypress_' . $field['key'];
+				$output .= '<p class="assemblypress-edit-profile-form__field">';
+				$output .= '<label for="' . esc_attr( $name ) . '">' . esc_html( $field['label'] ) . '</label>';
+				$output .= self::render_input( $name, $field, $value );
+				$output .= '</p>';
+			}
+			$output .= '</fieldset>';
 		}
 		$output .= wp_nonce_field( 'assemblypress_update_profile', 'assemblypress_profile_nonce', true, false );
 		$output .= '<button type="submit">' . esc_html__( 'Save profile', 'assemblypress' ) . '</button>';
@@ -183,8 +200,9 @@ final class Blocks {
 			$rendered .= '</ul>';
 		} elseif ( 'url' === $field['type'] && $value ) {
 			$rendered = '<a href="' . esc_url( $value ) . '">' . esc_html( $value ) . '</a>';
-		} elseif ( 'image' === $field['type'] && $value ) {
-			$rendered = wp_get_attachment_image( (int) $value, 'thumbnail' );
+		} elseif ( 'image' === $field['type'] ) {
+			$attachment_id = absint( $value );
+			$rendered      = $attachment_id ? wp_get_attachment_image( $attachment_id, 'thumbnail' ) : '';
 		} else {
 			$rendered = esc_html( (string) $value );
 		}
@@ -197,7 +215,7 @@ final class Blocks {
 	}
 
 	/**
-	 * Render a frontend form input.
+	 * Render one profile value input.
 	 *
 	 * @param string $name  Input name.
 	 * @param array  $field Field definition.

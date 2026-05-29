@@ -26,7 +26,7 @@ final class Admin {
 		add_menu_page(
 			__( 'AssemblyPress', 'assemblypress' ),
 			__( 'AssemblyPress', 'assemblypress' ),
-			'list_users',
+			Capabilities::manage_profile_schema(),
 			self::PAGE_SLUG,
 			array( self::class, 'render_screen' ),
 			'dashicons-groups',

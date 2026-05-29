@@ -42,6 +42,7 @@ final class Plugin {
 	 */
 	public function init() {
 		add_action( 'init', array( Config_Entities::class, 'register' ), 5 );
+		add_action( 'init', array( Profile_Field_Groups::class, 'ensure_starter_groups' ), 15 );
 		add_action( 'init', array( Profile_Fields::class, 'register_user_meta' ), 20 );
 		add_action( 'init', array( Blocks::class, 'register' ), 30 );
 		add_action( 'rest_api_init', array( Rest_Controller::class, 'register_routes' ) );
@@ -56,6 +57,7 @@ final class Plugin {
 	 */
 	public static function activate() {
 		Config_Entities::register();
+		Profile_Field_Groups::ensure_starter_groups();
 		Profile_Fields::seed_defaults();
 		flush_rewrite_rules();
 	}

@@ -2,10 +2,10 @@
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
 	"name": "assemblypress/edit-profile-form",
-	"title": "Edit Profile Form",
+	"title": "Profile Value Editor",
 	"category": "widgets",
 	"icon": "feedback",
-	"description": "Display a native AssemblyPress profile editing form.",
+	"description": "Temporary surface for testing editable AssemblyPress profile values.",
 	"textdomain": "assemblypress",
 	"supports": {
 		"align": [ "wide", "full" ],

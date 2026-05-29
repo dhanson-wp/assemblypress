@@ -2,7 +2,7 @@
 
 AssemblyPress is a block-native community platform for WordPress.
 
-Its goal is to become the primary open-source community plugin for WordPress: a modern, unified successor to BuddyPress and bbPress that treats forums, member spaces, profiles, moderation, and community management as one coherent WordPress-native product.
+The current product work is focused on an honest Member/Profile Foundation: WordPress users remain the identity layer, while AssemblyPress owns profile schema, profile values, visibility, member profile read/write flows, member directory/profile blocks, and a DataViews/DataForm admin surface for profile fields.
 
 ## Product Direction
 
@@ -20,18 +20,27 @@ Everything inside the product should feel like modern core WordPress.
 
 ## Current Status
 
-AssemblyPress now has its first plugin scaffold for native member profiles, profile fields, profile forms, and member directories.
+AssemblyPress now has its first plugin scaffold for native member profiles, profile field groups, profile fields, profile values, visibility, and member directories.
 
 The first implementation slice includes:
 
-- private AssemblyPress profile field, field group, and form configuration entities
-- registered user meta for member profile values
-- `assemblypress/v1` REST routes for fields, forms, members, and the current member profile
-- dynamic blocks for member directory, member profile, profile field, and edit profile form
-- an AssemblyPress admin screen with members, profile fields, and profile forms tabs
+- private AssemblyPress config CPTs for profile field groups and profile fields
+- registered WordPress user meta for member profile values
+- `assemblypress/v1` REST routes for profile fields, profile field groups, members, and the current member profile
+- dynamic blocks for member directory, member profile, profile field, and profile editing
+- a DataViews/DataForm-powered AssemblyPress admin screen for profile schema
 - `@wordpress/scripts`, `wp-env`, PHPCS, PHPUnit bootstrap, and Playwright E2E scaffolding
 
+Profile form configuration is intentionally quarantined until the Jetpack Forms-derived architecture is ready. Forums, topics, replies, queues, transitions, audit events, and moderation capabilities belong to a later Forum architecture build.
+
 Local WordPress development runs through `wp-env` on `http://localhost:8890`.
+
+## Local Development
+
+- `npm run wp-env start` starts the local WordPress environment.
+- `composer test` runs PHPUnit inside the `wp-env` `tests-cli` container.
+- `composer test:local` is only for manually configured local WordPress test suites with `WP_TESTS_DIR`.
+- `composer lint`, `npm run lint:js`, and `npm run build` are the current baseline checks.
 
 ## License
 

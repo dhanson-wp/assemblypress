@@ -6,6 +6,8 @@
  */
 
 use AssemblyPress\Profile_Fields;
+use AssemblyPress\Profile_Field_Groups;
+use AssemblyPress\Rest_Controller;
 
 /**
  * Profile field registry tests.
@@ -43,6 +45,151 @@ class ProfileFieldsTest extends WP_UnitTestCase {
 		$this->assertTrue( $bio['is_system'] );
 		$this->assertTrue( $website['is_system'] );
 		$this->assertFalse( $location['is_system'] );
+	}
+
+	/**
+	 * Starter groups are created and default fields are assigned by product area.
+	 *
+	 * @return void
+	 */
+	public function test_starter_groups_and_default_field_assignments() {
+		Profile_Fields::seed_defaults();
+
+		$groups = Profile_Field_Groups::get_groups();
+		$keys   = wp_list_pluck( $groups, 'key' );
+
+		$this->assertContains( 'base', $keys );
+		$this->assertContains( 'contact', $keys );
+		$this->assertContains( 'about', $keys );
+		$this->assertContains( 'social', $keys );
+
+		$groups_by_key = array();
+		foreach ( $groups as $group ) {
+			$groups_by_key[ $group['key'] ] = $group;
+		}
+
+		$this->assertSame( (int) $groups_by_key['base']['id'], (int) Profile_Fields::get_field( 'display_name' )['group_id'] );
+		$this->assertSame( (int) $groups_by_key['base']['id'], (int) Profile_Fields::get_field( 'avatar' )['group_id'] );
+		$this->assertSame( (int) $groups_by_key['contact']['id'], (int) Profile_Fields::get_field( 'website' )['group_id'] );
+		$this->assertSame( (int) $groups_by_key['about']['id'], (int) Profile_Fields::get_field( 'bio' )['group_id'] );
+		$this->assertSame( (int) $groups_by_key['about']['id'], (int) Profile_Fields::get_field( 'location' )['group_id'] );
+		$this->assertSame( (int) $groups_by_key['social']['id'], (int) Profile_Fields::get_field( 'social_links' )['group_id'] );
+	}
+
+	/**
+	 * Field groups support CRUD and duplicate key protection.
+	 *
+	 * @return void
+	 */
+	public function test_field_group_crud_and_duplicate_keys() {
+		$created = Profile_Field_Groups::create_group(
+			array(
+				'key'         => 'membership',
+				'label'       => 'Membership',
+				'description' => 'Membership details.',
+				'order'       => 90,
+			)
+		);
+
+		$this->assertNotWPError( $created );
+		$this->assertSame( 'membership', $created['key'] );
+		$this->assertSame( 'Membership', $created['label'] );
+		$this->assertSame( 90, $created['order'] );
+
+		$duplicate = Profile_Field_Groups::create_group(
+			array(
+				'key'   => 'membership',
+				'label' => 'Duplicate Membership',
+			)
+		);
+
+		$this->assertWPError( $duplicate );
+		$this->assertSame( 'assemblypress_duplicate_group_key', $duplicate->get_error_code() );
+
+		$updated = Profile_Field_Groups::update_group(
+			$created['id'],
+			array_merge(
+				$created,
+				array(
+					'label' => 'Member details',
+					'order' => 95,
+				)
+			)
+		);
+
+		$this->assertNotWPError( $updated );
+		$this->assertSame( 'Member details', $updated['label'] );
+		$this->assertSame( 95, $updated['order'] );
+
+		$deleted = Profile_Field_Groups::delete_group( $created['id'] );
+
+		$this->assertSame( array( 'deleted' => true ), $deleted );
+		$this->assertNull( get_post( $created['id'] ) );
+	}
+
+	/**
+	 * Groups with assigned fields cannot be deleted.
+	 *
+	 * @return void
+	 */
+	public function test_group_delete_is_blocked_when_fields_are_assigned() {
+		Profile_Fields::seed_defaults();
+
+		$base   = Profile_Field_Groups::get_group( 'base' );
+		$result = Profile_Field_Groups::delete_group( $base['id'] );
+
+		$this->assertWPError( $result );
+		$this->assertSame( 'assemblypress_group_not_empty', $result->get_error_code() );
+		$this->assertNotNull( get_post( $base['id'] ) );
+	}
+
+	/**
+	 * The earlier Identity starter group migrates to the BuddyPress-familiar Base group.
+	 *
+	 * @return void
+	 */
+	public function test_legacy_identity_group_migrates_to_base() {
+		$identity = Profile_Field_Groups::create_group(
+			array(
+				'key'   => 'identity',
+				'label' => 'Identity',
+				'order' => 10,
+			)
+		);
+
+		$this->assertNotWPError( $identity );
+
+		Profile_Field_Groups::ensure_starter_groups();
+
+		$this->assertNull( Profile_Field_Groups::get_group( 'identity' ) );
+
+		$base = Profile_Field_Groups::get_group( 'base' );
+
+		$this->assertNotNull( $base );
+		$this->assertSame( (int) $identity['id'], (int) $base['id'] );
+		$this->assertSame( 'Base', $base['label'] );
+	}
+
+	/**
+	 * The earliest empty Profile placeholder group is removed.
+	 *
+	 * @return void
+	 */
+	public function test_empty_legacy_profile_group_is_removed() {
+		$profile = Profile_Field_Groups::create_group(
+			array(
+				'key'   => 'profile',
+				'label' => 'Profile',
+				'order' => 5,
+			)
+		);
+
+		$this->assertNotWPError( $profile );
+
+		Profile_Field_Groups::ensure_starter_groups();
+
+		$this->assertNull( Profile_Field_Groups::get_group( 'profile' ) );
+		$this->assertNull( get_post( $profile['id'] ) );
 	}
 
 	/**
@@ -106,6 +253,9 @@ class ProfileFieldsTest extends WP_UnitTestCase {
 	 * @return void
 	 */
 	public function test_custom_field_crud_select_options_and_ordering() {
+		Profile_Field_Groups::ensure_starter_groups();
+		$contact_group = Profile_Field_Groups::get_group( 'contact' );
+
 		$created = Profile_Fields::create_field(
 			array(
 				'key'        => 'preferred_contact',
@@ -115,6 +265,7 @@ class ProfileFieldsTest extends WP_UnitTestCase {
 				'editable'   => true,
 				'required'   => false,
 				'order'      => 70,
+				'group_id'   => $contact_group['id'],
 				'options'    => array(
 					array(
 						'value' => 'email',
@@ -132,6 +283,7 @@ class ProfileFieldsTest extends WP_UnitTestCase {
 		$this->assertFalse( $created['is_system'] );
 		$this->assertSame( 'preferred_contact', $created['key'] );
 		$this->assertSame( 70, $created['order'] );
+		$this->assertSame( (int) $contact_group['id'], (int) $created['group_id'] );
 		$this->assertSame( 'email', $created['options'][0]['value'] );
 
 		$updated = Profile_Fields::update_field(
@@ -152,11 +304,239 @@ class ProfileFieldsTest extends WP_UnitTestCase {
 
 		$this->assertNotWPError( $updated );
 		$this->assertSame( 20, $updated['order'] );
+		$this->assertSame( (int) $contact_group['id'], (int) $updated['group_id'] );
 		$this->assertSame( 'sms', $updated['options'][0]['value'] );
 
 		$deleted = Profile_Fields::delete_field( $created['id'] );
 
 		$this->assertSame( array( 'deleted' => true ), $deleted );
 		$this->assertNull( get_post( $created['id'] ) );
+	}
+
+	/**
+	 * Member profiles expose grouped fields while preserving the flat fields array.
+	 *
+	 * @return void
+	 */
+	public function test_member_profile_includes_grouped_fields_and_flat_fields() {
+		Profile_Fields::seed_defaults();
+
+		$user_id = self::factory()->user->create(
+			array(
+				'display_name' => 'Ada Lovelace',
+				'description'  => 'Mathematician',
+				'user_url'     => 'https://example.com',
+			)
+		);
+
+		update_user_meta( $user_id, 'description', 'Mathematician' );
+
+		$profile = Profile_Fields::get_member_profile( $user_id, true );
+
+		$this->assertNotWPError( $profile );
+		$this->assertArrayHasKey( 'fields', $profile );
+		$this->assertArrayHasKey( 'groups', $profile );
+		$this->assertNotEmpty( $profile['fields'] );
+		$this->assertNotEmpty( $profile['groups'] );
+
+		$group_keys = wp_list_pluck( $profile['groups'], 'key' );
+
+		$this->assertContains( 'base', $group_keys );
+		$this->assertContains( 'contact', $group_keys );
+
+		foreach ( $profile['groups'] as $group ) {
+			$this->assertNotEmpty( $group['fields'] );
+		}
+	}
+
+	/**
+	 * Empty image fields do not render as zero in frontend profile blocks.
+	 *
+	 * @return void
+	 */
+	public function test_empty_profile_image_field_does_not_render_zero() {
+		Profile_Fields::seed_defaults();
+
+		$user_id = self::factory()->user->create( array( 'display_name' => 'Empty Image Member' ) );
+
+		$profile = do_blocks( '<!-- wp:assemblypress/member-profile {"userId":' . (int) $user_id . '} /-->' );
+		$field   = do_blocks( '<!-- wp:assemblypress/profile-field {"fieldKey":"avatar","userId":' . (int) $user_id . '} /-->' );
+
+		$this->assertStringNotContainsString( 'Profile image', $profile );
+		$this->assertStringNotContainsString( '<dd>0</dd>', $profile );
+		$this->assertStringNotContainsString( '<dd>0</dd>', $field );
+	}
+
+	/**
+	 * Image fields still render when a real attachment ID exists.
+	 *
+	 * @return void
+	 */
+	public function test_profile_image_field_renders_attachment() {
+		Profile_Fields::seed_defaults();
+
+		$user_id       = self::factory()->user->create( array( 'display_name' => 'Image Member' ) );
+		$attachment_id = wp_insert_attachment(
+			array(
+				'post_mime_type' => 'image/jpeg',
+				'post_title'     => 'Profile image attachment',
+				'post_status'    => 'inherit',
+			),
+			'profile-image.jpg'
+		);
+
+		wp_update_attachment_metadata(
+			$attachment_id,
+			array(
+				'width'  => 1,
+				'height' => 1,
+				'file'   => 'profile-image.jpg',
+				'sizes'  => array(),
+			)
+		);
+
+		update_user_meta( $user_id, 'assemblypress_avatar_id', $attachment_id );
+
+		$output = do_blocks( '<!-- wp:assemblypress/profile-field {"fieldKey":"avatar","userId":' . (int) $user_id . '} /-->' );
+
+		$this->assertStringContainsString( 'Profile image', $output );
+		$this->assertStringContainsString( '<img', $output );
+		$this->assertStringNotContainsString( '<dd>0</dd>', $output );
+	}
+
+	/**
+	 * The current-member profile route writes editable user-backed and meta-backed values.
+	 *
+	 * @return void
+	 */
+	public function test_current_member_profile_route_writes_profile_values() {
+		Profile_Fields::seed_defaults();
+
+		$user_id = self::factory()->user->create(
+			array(
+				'display_name' => 'Original Name',
+				'user_url'     => '',
+			)
+		);
+
+		wp_set_current_user( $user_id );
+
+		$request = new WP_REST_Request( 'POST', '/assemblypress/v1/me/profile' );
+		$request->set_header( 'Content-Type', 'application/json' );
+		$request->set_body(
+			wp_json_encode(
+				array(
+					'fields' => array(
+						'display_name' => 'Grace Hopper',
+						'bio'          => 'Compiler pioneer',
+						'location'     => 'Arlington',
+						'website'      => 'https://example.org',
+					),
+				)
+			)
+		);
+
+		$result = Rest_Controller::update_my_profile( $request );
+
+		$this->assertNotWPError( $result );
+
+		$user = get_userdata( $user_id );
+
+		$this->assertSame( 'Grace Hopper', $user->display_name );
+		$this->assertSame( 'https://example.org', $user->user_url );
+		$this->assertSame( 'Compiler pioneer', get_user_meta( $user_id, 'description', true ) );
+		$this->assertSame( 'Arlington', get_user_meta( $user_id, 'assemblypress_location', true ) );
+	}
+
+	/**
+	 * Private profile fields are hidden from public member reads.
+	 *
+	 * @return void
+	 */
+	public function test_private_fields_are_hidden_from_public_member_reads() {
+		Profile_Fields::seed_defaults();
+
+		$about_group = Profile_Field_Groups::get_group( 'about' );
+		$field       = Profile_Fields::create_field(
+			array(
+				'key'        => 'secret_code',
+				'label'      => 'Secret Code',
+				'type'       => 'text',
+				'visibility' => 'private',
+				'editable'   => true,
+				'required'   => false,
+				'group_id'   => $about_group['id'],
+				'order'      => 80,
+			)
+		);
+
+		$this->assertNotWPError( $field );
+
+		$user_id = self::factory()->user->create();
+		update_user_meta( $user_id, 'assemblypress_secret_code', 'hidden' );
+
+		$public_profile  = Profile_Fields::get_member_profile( $user_id, false );
+		$private_profile = Profile_Fields::get_member_profile( $user_id, true );
+
+		$this->assertNotContains( 'secret_code', wp_list_pluck( $public_profile['fields'], 'key' ) );
+		$this->assertContains( 'secret_code', wp_list_pluck( $private_profile['fields'], 'key' ) );
+	}
+
+	/**
+	 * Required editable fields reject empty values.
+	 *
+	 * @return void
+	 */
+	public function test_required_editable_fields_reject_empty_values() {
+		Profile_Fields::seed_defaults();
+
+		$user_id = self::factory()->user->create();
+		$result  = Profile_Fields::update_member_profile(
+			$user_id,
+			array(
+				'display_name' => '',
+			)
+		);
+
+		$this->assertWPError( $result );
+		$this->assertSame( 'assemblypress_required_field', $result->get_error_code() );
+	}
+
+	/**
+	 * Non-editable profile fields ignore submitted member values.
+	 *
+	 * @return void
+	 */
+	public function test_non_editable_fields_ignore_submitted_values() {
+		Profile_Fields::seed_defaults();
+
+		$about_group = Profile_Field_Groups::get_group( 'about' );
+		$field       = Profile_Fields::create_field(
+			array(
+				'key'        => 'staff_note',
+				'label'      => 'Staff Note',
+				'type'       => 'text',
+				'visibility' => 'private',
+				'editable'   => false,
+				'required'   => false,
+				'group_id'   => $about_group['id'],
+				'order'      => 90,
+			)
+		);
+
+		$this->assertNotWPError( $field );
+
+		$user_id = self::factory()->user->create();
+		update_user_meta( $user_id, 'assemblypress_staff_note', 'original' );
+
+		$result = Profile_Fields::update_member_profile(
+			$user_id,
+			array(
+				'staff_note' => 'changed',
+			)
+		);
+
+		$this->assertNotWPError( $result );
+		$this->assertSame( 'original', get_user_meta( $user_id, 'assemblypress_staff_note', true ) );
 	}
 }

@@ -4,7 +4,7 @@
 
 The actual AssemblyPress plugin UI must follow WordPress Design System practices.
 
-Impeccable may shape flows, critique hierarchy, improve onboarding, clarify empty states, and help define the product experience. WPDS wins for product UI implementation.
+Impeccable may shape flows, critique hierarchy, clarify empty states, and help define the product experience. WPDS wins for product UI implementation.
 
 Marketing pages may have their own brand system. Plugin UI may not inherit marketing styling unless it is expressed through WordPress-native patterns.
 
@@ -35,7 +35,7 @@ Avoid:
 
 Admin and management surfaces are DataViews-native.
 
-Use DataViews for structured collections, including members, spaces, discussions, moderation queues, reports, settings collections, and any browsable community records.
+Use DataViews for structured collections, including profile schema now and future members, spaces, discussions, moderation queues, reports, settings collections, and any browsable community records.
 
 Use WordPress components for controls, buttons, notices, panels, menus, tabs, modals, confirmations, forms, filters, and layout primitives.
 
@@ -47,7 +47,7 @@ Admin screens should feel aligned with the Site Editor and the next-generation W
 
 Public and community surfaces are block-native.
 
-Community pages should be assembled through:
+Member/profile pages should be assembled through:
 
 - custom blocks
 - block patterns
@@ -60,11 +60,9 @@ Community pages should be assembled through:
 
 A designer should be able to design a community experience in Figma and have developers translate it into WordPress-native blocks, patterns, templates, and Site Editor surfaces.
 
-## Forums by Default
+## Quarantined Forum Architecture
 
-Forums are a default product primitive.
-
-AssemblyPress should not require a separate forum plugin to deliver core community value. Forums should integrate with spaces, profiles, moderation, notifications, templates, and blocks as part of one coherent product.
+Forums, topics, replies, queues, transitions, audit events, and moderation capabilities are out of scope for the current Member/Profile Foundation. They should return as a later Forum architecture build.
 
 ## Block Development Rules
 
@@ -106,5 +104,5 @@ Before shipping plugin UI, confirm:
 - Site Editor customization is respected
 - saved block markup does not become invalid
 - admin screens support empty, loading, error, and permission states
-- forums are integrated into the community model, not bolted on
+- forum and moderation claims are absent from the active Member/Profile Foundation
 - Impeccable-shaped UX decisions are expressed through WPDS and WordPress-native implementation patterns

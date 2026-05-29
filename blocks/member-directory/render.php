@@ -5,4 +5,4 @@
  * @package AssemblyPress
  */
 
-return AssemblyPress\Blocks::render_member_directory( $attributes );
+echo AssemblyPress\Blocks::render_member_directory( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped

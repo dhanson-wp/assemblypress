@@ -5,6 +5,18 @@
 .vscode/
 *.swp
 *.swo
+.env
+.env.*
+
+# Local agent/session notes
+ASSEMBLYPRESS-HANDOFF.md
+LOCAL-HANDOFF.md
+.agent-local/
+.agents/
+.claude/
+.codex/
+.cursor/
+.gstack/
 
 # Dependencies
 node_modules/
@@ -15,10 +27,23 @@ build/
 dist/
 coverage/
 .phpunit.result.cache
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.zip
+*.tar
+*.tar.gz
+*.sql
+*.sqlite
+*.sqlite3
 
 # WordPress/local environment artifacts
 .wp-env.override.json
+.wp-env/
 wp-content/uploads/
+wp-content/debug.log
 
 # Project scratch/output artifacts
 outputs/

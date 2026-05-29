@@ -4,7 +4,7 @@
 
 AssemblyPress is a block-native community platform for WordPress.
 
-Its goal is to become the primary open-source community plugin for WordPress: a modern, unified successor to BuddyPress and bbPress that treats forums, member spaces, profiles, moderation, and community management as one coherent WordPress-native product.
+Its long-term goal is to become the primary open-source community plugin for WordPress. The current implementation slice is narrower: a Member/Profile Foundation built on WordPress users for identity and AssemblyPress-owned profile schema, values, visibility, directory, profile, and editing surfaces.
 
 AssemblyPress should make WordPress feel like the best place to build an owned community again.
 
@@ -26,19 +26,29 @@ This split is foundational. The front of the community should be composed with b
 
 AssemblyPress should avoid shortcode-first thinking, isolated custom app shells, and legacy admin screens as default product architecture.
 
-## Forums by Default
+## Current Slice
 
-Forums are a first-class default product primitive.
+The first real implementation slice is the Member/Profile Foundation.
 
-AssemblyPress should not require a separate forum plugin to deliver core community value. Structured discussion belongs inside the community model from the beginning, alongside members, spaces, moderation, notifications, templates, and blocks.
+In scope now:
 
-The goal is not to clone bbPress. The goal is to make structured community discussion feel native to modern WordPress.
+- WordPress users as identity
+- AssemblyPress profile field groups
+- AssemblyPress profile fields and options
+- AssemblyPress-owned profile values
+- field visibility
+- public member profile reads
+- current-member profile writes
+- member directory/profile blocks
+- DataViews/DataForm admin for profile schema
+
+Profile form configuration is experimental until the Jetpack Forms-derived architecture is ready.
 
 ## Full Site Editing Thesis
 
 The community should be designed in the Site Editor.
 
-Community home pages, member directories, profiles, spaces, discussion archives, topic views, and onboarding surfaces should be composed with blocks, patterns, and templates.
+Member directories and profiles should be composed with blocks, patterns, and templates.
 
 When a designer creates a community experience in Figma, developers should be able to translate that work into native and custom blocks, block patterns, template parts, theme.json decisions, and Gutenberg controls. AssemblyPress should make modern WordPress the design and implementation surface for the community.
 
@@ -50,7 +60,9 @@ All plugin management surfaces should move toward the modern WordPress admin dir
 
 Admin screens should feel like modern WordPress product surfaces, not old settings pages with custom tables.
 
-Use DataViews for collections, moderation queues, members, spaces, discussions, reports, and any structured management surface. Use DataForm or WordPress component patterns for editing records and settings.
+Use DataViews for profile schema collections and future structured management surfaces. Use DataForm or WordPress component patterns for editing records and settings.
+
+Forum, moderation, and audit management surfaces belong to the later Forum architecture build, not the current Member/Profile Foundation.
 
 ## Strategic Anti-References
 
@@ -60,7 +72,7 @@ Avoid:
 
 - dated admin and front-end experiences
 - fragmented plugin setup
-- unclear boundaries between profiles, groups, activity, and forums
+- unclear boundaries between profiles and later forum/community primitives
 - excessive configuration before value appears
 - UI that feels like legacy wp-admin instead of modern WordPress
 - shortcode-first layouts as the primary product surface
@@ -79,21 +91,18 @@ AssemblyPress is for:
 
 ## Product Shape
 
-The first version should prove the core community loop:
+The first foundation version should prove the member/profile loop:
 
-1. A site owner can launch a community.
-2. Members can join and have an identity.
-3. Members can participate in structured discussions.
-4. The site owner can shape the experience in the Site Editor.
-5. Moderators can keep the community healthy.
+1. WordPress users act as member identity.
+2. Site owners can define profile groups and fields.
+3. Members can read and update their profile values.
+4. Visitors can browse a member directory and view member profiles.
+5. The site owner can shape member/profile surfaces with blocks.
 
 Everything else should support that loop.
 
-Long-term product surfaces may include:
+Quarantined for later architecture:
 
-- community home
-- member profiles
-- member directory
 - spaces or groups
 - forums and discussions
 - topic and reply views
@@ -101,17 +110,16 @@ Long-term product surfaces may include:
 - notifications
 - moderation queues
 - onboarding and setup
-- admin settings
-- Site Editor templates, patterns, and blocks
+- transitions and audit events
 
 ## Success Criteria
 
 AssemblyPress succeeds when a WordPress user can:
 
-- launch a complete community without assembling multiple legacy plugins
-- use forums as a default part of the community model
-- customize community pages in the Site Editor
+- define profile groups and profile fields
+- let members edit AssemblyPress-owned profile values
+- publish member directory and profile surfaces with blocks
 - use blocks and patterns instead of shortcode-driven layouts
-- manage members, discussions, spaces, and moderation with modern WordPress UI
+- manage profile schema with modern WordPress UI
 - recognize the product as WordPress-native, not a SaaS iframe or custom admin island
-- see BuddyPress and bbPress as legacy tools by comparison, not because AssemblyPress is flashy, but because it is clearer, more coherent, and more native to modern WordPress
+- see a credible path toward a clearer, more coherent, and more native WordPress community product

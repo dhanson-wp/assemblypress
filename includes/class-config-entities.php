@@ -12,12 +12,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Registers private configuration entities for fields, groups, and forms.
+ * Registers private configuration entities for the profile schema.
  */
 final class Config_Entities {
 	const FIELD_GROUP_POST_TYPE = 'ap_profile_field_grp';
 	const FIELD_POST_TYPE       = 'ap_profile_field';
-	const FORM_POST_TYPE        = 'ap_profile_form';
 
 	/**
 	 * Register internal post types.
@@ -37,13 +36,6 @@ final class Config_Entities {
 			__( 'Profile Fields', 'assemblypress' ),
 			__( 'Profile Field', 'assemblypress' ),
 			'profile-fields'
-		);
-
-		self::register_config_type(
-			self::FORM_POST_TYPE,
-			__( 'Profile Forms', 'assemblypress' ),
-			__( 'Profile Form', 'assemblypress' ),
-			'profile-forms'
 		);
 	}
 

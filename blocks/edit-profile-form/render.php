@@ -1,8 +1,8 @@
 <?php
 /**
- * Edit profile form block render.
+ * Temporary profile value editor block render.
  *
  * @package AssemblyPress
  */
 
-return AssemblyPress\Blocks::render_edit_profile_form();
+echo AssemblyPress\Blocks::render_edit_profile_form(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
