@@ -1022,7 +1022,12 @@ final class Rest_Controller {
 		}
 
 		$values = array_key_exists( 'fields', $params ) ? $params['fields'] : $params;
+		$result = Profile_Fields::update_member_profile( get_current_user_id(), $values );
 
-		return Profile_Fields::update_member_profile( get_current_user_id(), $values );
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+
+		return self::prepare_member_for_response( get_current_user_id(), $request, true );
 	}
 }
