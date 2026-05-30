@@ -28,8 +28,20 @@
 						} )
 					)
 				),
-				el( 'strong', {}, __( 'Member Profile', 'assemblypress' ) ),
-				el( 'p', {}, __( 'Displays a dynamic AssemblyPress member profile.', 'assemblypress' ) )
+				el(
+					'div',
+					{ className: 'assemblypress-editor-preview' },
+					el( 'span', { className: 'assemblypress-editor-preview__label' }, __( 'Dynamic block', 'assemblypress' ) ),
+					el( 'strong', {}, __( 'Member Profile', 'assemblypress' ) ),
+					el( 'p', {}, __( 'Renders member profile sections from AssemblyPress profile fields.', 'assemblypress' ) ),
+					el(
+						'span',
+						{ className: 'assemblypress-editor-preview__meta' },
+						props.attributes.userId
+							? __( 'Specific user ID:', 'assemblypress' ) + ' ' + props.attributes.userId
+							: __( 'Uses the current member context when available.', 'assemblypress' )
+					)
+				)
 			);
 		},
 		save: function () {

@@ -1,0 +1,26 @@
+.wp-block-assemblypress-edit-profile-form .assemblypress-editor-preview {
+	border: 1px dashed #949494;
+	font-size: 13px;
+	line-height: 1.4;
+	padding: 12px 14px;
+}
+
+.wp-block-assemblypress-edit-profile-form .assemblypress-editor-preview > * {
+	margin-bottom: 0;
+	margin-top: 0;
+}
+
+.wp-block-assemblypress-edit-profile-form .assemblypress-editor-preview > * + * {
+	margin-top: 6px;
+}
+
+.wp-block-assemblypress-edit-profile-form .assemblypress-editor-preview strong {
+	display: block;
+	font-size: 13px;
+}
+
+.wp-block-assemblypress-edit-profile-form .assemblypress-editor-preview__label {
+	color: #757575;
+	display: block;
+	font-size: 12px;
+}

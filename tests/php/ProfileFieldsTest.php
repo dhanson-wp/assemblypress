@@ -14,6 +14,24 @@ use AssemblyPress\Rest_Controller;
  */
 class ProfileFieldsTest extends WP_UnitTestCase {
 	/**
+	 * Reset request state after block form tests.
+	 *
+	 * @return void
+	 */
+	public function tear_down() {
+		unset( $_POST['assemblypress_profile_nonce'] );
+		unset( $_POST['assemblypress_display_name'] );
+		unset( $_POST['assemblypress_bio'] );
+		unset( $_POST['assemblypress_location'] );
+		unset( $_POST['assemblypress_website'] );
+		unset( $_POST['assemblypress_avatar'] );
+		unset( $_SERVER['REQUEST_METHOD'] );
+		wp_set_current_user( 0 );
+
+		parent::tear_down();
+	}
+
+	/**
 	 * Default profile fields include required community identity fields.
 	 *
 	 * @return void
@@ -368,6 +386,32 @@ class ProfileFieldsTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Profile blocks render field values inside semantic definition lists.
+	 *
+	 * @return void
+	 */
+	public function test_profile_blocks_render_semantic_definition_lists() {
+		Profile_Fields::seed_defaults();
+
+		$user_id = self::factory()->user->create(
+			array(
+				'display_name' => 'Semantic Member',
+			)
+		);
+		update_user_meta( $user_id, 'assemblypress_location', 'Semantic Place' );
+
+		$profile = do_blocks( '<!-- wp:assemblypress/member-profile {"userId":' . (int) $user_id . '} /-->' );
+		$field   = do_blocks( '<!-- wp:assemblypress/profile-field {"fieldKey":"location","userId":' . (int) $user_id . '} /-->' );
+
+		$this->assertStringContainsString( '<section class="assemblypress-member-profile__group">', $profile );
+		$this->assertStringContainsString( '<dl class="assemblypress-member-profile__fields">', $profile );
+		$this->assertStringContainsString( '<dt>Location</dt><dd>Semantic Place</dd>', $profile );
+
+		$this->assertStringContainsString( '<dl class="assemblypress-profile-field__fields">', $field );
+		$this->assertStringContainsString( '<dt>Location</dt><dd>Semantic Place</dd>', $field );
+	}
+
+	/**
 	 * Image fields still render when a real attachment ID exists.
 	 *
 	 * @return void
@@ -503,6 +547,62 @@ class ProfileFieldsTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Profile updates validate the submitted batch before persisting any values.
+	 *
+	 * @return void
+	 */
+	public function test_profile_updates_validate_before_persisting_values() {
+		Profile_Fields::seed_defaults();
+
+		$about_group = Profile_Field_Groups::get_group( 'about' );
+		$field       = Profile_Fields::create_field(
+			array(
+				'key'        => 'required_note',
+				'label'      => 'Required Note',
+				'type'       => 'text',
+				'visibility' => 'private',
+				'editable'   => true,
+				'required'   => true,
+				'group_id'   => $about_group['id'],
+				'order'      => 120,
+			)
+		);
+
+		$this->assertNotWPError( $field );
+
+		$user_id = self::factory()->user->create( array( 'display_name' => 'Original Name' ) );
+
+		$result = Profile_Fields::update_member_profile(
+			$user_id,
+			array(
+				'display_name'  => 'Partial Update',
+				'location'      => 'Should Not Save',
+				'required_note' => '',
+			)
+		);
+
+		$this->assertWPError( $result );
+		$this->assertSame( 'assemblypress_required_field', $result->get_error_code() );
+		$this->assertSame( 'Original Name', get_userdata( $user_id )->display_name );
+		$this->assertSame( '', get_user_meta( $user_id, 'assemblypress_location', true ) );
+	}
+
+	/**
+	 * Profile updates reject non-object value payloads.
+	 *
+	 * @return void
+	 */
+	public function test_profile_updates_reject_non_array_values() {
+		Profile_Fields::seed_defaults();
+
+		$user_id = self::factory()->user->create();
+		$result  = Profile_Fields::update_member_profile( $user_id, 'display_name=Nope' );
+
+		$this->assertWPError( $result );
+		$this->assertSame( 'assemblypress_invalid_profile_values', $result->get_error_code() );
+	}
+
+	/**
 	 * Non-editable profile fields ignore submitted member values.
 	 *
 	 * @return void
@@ -538,5 +638,55 @@ class ProfileFieldsTest extends WP_UnitTestCase {
 
 		$this->assertNotWPError( $result );
 		$this->assertSame( 'original', get_user_meta( $user_id, 'assemblypress_staff_note', true ) );
+	}
+
+	/**
+	 * The temporary profile editor reports successful saves and reads updated values.
+	 *
+	 * @return void
+	 */
+	public function test_edit_profile_form_reports_success_and_reads_updated_values() {
+		Profile_Fields::seed_defaults();
+
+		$user_id = self::factory()->user->create( array( 'display_name' => 'Before Save' ) );
+		wp_set_current_user( $user_id );
+
+		$_SERVER['REQUEST_METHOD']          = 'POST';
+		$_POST['assemblypress_profile_nonce'] = wp_create_nonce( 'assemblypress_update_profile' );
+		$_POST['assemblypress_display_name']  = 'After Save';
+		$_POST['assemblypress_bio']           = 'Updated bio';
+		$_POST['assemblypress_location']      = 'Updated location';
+		$_POST['assemblypress_website']       = 'https://example.org';
+		$_POST['assemblypress_avatar']        = '0';
+
+		$output = do_blocks( '<!-- wp:assemblypress/edit-profile-form /-->' );
+
+		$this->assertStringContainsString( 'Profile saved.', $output );
+		$this->assertStringContainsString( 'value="After Save"', $output );
+		$this->assertSame( 'After Save', get_userdata( $user_id )->display_name );
+		$this->assertSame( 'Updated location', get_user_meta( $user_id, 'assemblypress_location', true ) );
+	}
+
+	/**
+	 * The temporary profile editor reports validation errors without partial writes.
+	 *
+	 * @return void
+	 */
+	public function test_edit_profile_form_reports_validation_errors_without_partial_writes() {
+		Profile_Fields::seed_defaults();
+
+		$user_id = self::factory()->user->create( array( 'display_name' => 'Before Error' ) );
+		wp_set_current_user( $user_id );
+
+		$_SERVER['REQUEST_METHOD']          = 'POST';
+		$_POST['assemblypress_profile_nonce'] = wp_create_nonce( 'assemblypress_update_profile' );
+		$_POST['assemblypress_display_name']  = '';
+		$_POST['assemblypress_location']      = 'Should Not Save';
+
+		$output = do_blocks( '<!-- wp:assemblypress/edit-profile-form /-->' );
+
+		$this->assertStringContainsString( 'Display name is required.', $output );
+		$this->assertSame( 'Before Error', get_userdata( $user_id )->display_name );
+		$this->assertSame( '', get_user_meta( $user_id, 'assemblypress_location', true ) );
 	}
 }

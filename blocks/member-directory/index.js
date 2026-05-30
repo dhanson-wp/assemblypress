@@ -30,8 +30,18 @@
 						} )
 					)
 				),
-				el( 'strong', {}, __( 'Member Directory', 'assemblypress' ) ),
-				el( 'p', {}, __( 'Displays AssemblyPress members on the frontend.', 'assemblypress' ) )
+				el(
+					'div',
+					{ className: 'assemblypress-editor-preview' },
+					el( 'span', { className: 'assemblypress-editor-preview__label' }, __( 'Dynamic block', 'assemblypress' ) ),
+					el( 'strong', {}, __( 'Member Directory', 'assemblypress' ) ),
+					el( 'p', {}, __( 'Renders a theme-led member list on the frontend.', 'assemblypress' ) ),
+					el(
+						'span',
+						{ className: 'assemblypress-editor-preview__meta' },
+						__( 'Members to show:', 'assemblypress' ) + ' ' + props.attributes.perPage
+					)
+				)
 			);
 		},
 		save: function () {

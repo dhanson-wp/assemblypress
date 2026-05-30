@@ -9,8 +9,13 @@
 			return el(
 				'div',
 				useBlockProps(),
-				el( 'strong', {}, __( 'Profile Value Editor', 'assemblypress' ) ),
-				el( 'p', {}, __( 'Temporary surface for testing editable AssemblyPress profile values.', 'assemblypress' ) )
+				el(
+					'div',
+					{ className: 'assemblypress-editor-preview is-temporary' },
+					el( 'span', { className: 'assemblypress-editor-preview__label' }, __( 'Temporary testing block', 'assemblypress' ) ),
+					el( 'strong', {}, __( 'Profile Value Editor', 'assemblypress' ) ),
+					el( 'p', {}, __( 'Testing surface for editable profile values. Not the final profile editor architecture.', 'assemblypress' ) )
+				)
 			);
 		},
 		save: function () {

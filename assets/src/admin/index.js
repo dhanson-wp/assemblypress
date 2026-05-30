@@ -27,6 +27,7 @@ import {
 	arrowDown,
 	arrowUp,
 	check,
+	closeSmall,
 	group,
 	image,
 	link,
@@ -713,13 +714,19 @@ function DeleteFieldModal( { fields, onClose, onDeleted } ) {
 	);
 }
 
-function ProfileGroupModal( { groupItem, onClose, onSaved } ) {
+function ProfileGroupDetail( { groupItem, onClose, onSaved } ) {
 	const isNew = ! groupItem?.id;
 	const [ data, setData ] = useState( () =>
 		prepareGroupForForm( groupItem )
 	);
 	const [ isSaving, setIsSaving ] = useState( false );
 	const [ error, setError ] = useState( '' );
+
+	useEffect( () => {
+		setData( prepareGroupForForm( groupItem ) );
+		setError( '' );
+		setIsSaving( false );
+	}, [ groupItem ] );
 
 	function updateData( edits ) {
 		setData( ( current ) => {
@@ -767,54 +774,72 @@ function ProfileGroupModal( { groupItem, onClose, onSaved } ) {
 	}
 
 	return (
-		<Modal
-			className="assemblypress-field-modal"
-			title={
-				isNew
-					? __( 'Create field group', 'assemblypress' )
-					: __( 'Edit field group', 'assemblypress' )
-			}
-			onRequestClose={ onClose }
-			size="small"
+		<aside
+			className="assemblypress-section-detail"
+			aria-labelledby="assemblypress-section-detail-title"
 		>
-			{ error && (
-				<Notice status="error" isDismissible={ false }>
-					{ error }
-				</Notice>
-			) }
-			<TextControl
-				__next40pxDefaultSize
-				__nextHasNoMarginBottom
-				label={ __( 'Label', 'assemblypress' ) }
-				value={ data.label }
-				onChange={ ( label ) => updateData( { label } ) }
-			/>
-			<TextControl
-				__next40pxDefaultSize
-				__nextHasNoMarginBottom
-				label={ __( 'Key', 'assemblypress' ) }
-				help={ __(
-					'Lowercase letters, numbers, and underscores only.',
-					'assemblypress'
+			<div className="assemblypress-section-detail__header">
+				<div>
+					<div className="assemblypress-section-header__eyebrow">
+						{ __( 'Profile section', 'assemblypress' ) }
+					</div>
+					<h2 id="assemblypress-section-detail-title">
+						{ isNew
+							? __( 'Add section', 'assemblypress' )
+							: __( 'Edit section', 'assemblypress' ) }
+					</h2>
+				</div>
+				<Button
+					__next40pxDefaultSize
+					icon={ closeSmall }
+					label={ __( 'Close section details', 'assemblypress' ) }
+					onClick={ onClose }
+				/>
+			</div>
+			<div className="assemblypress-section-detail__body">
+				{ error && (
+					<Notice status="error" isDismissible={ false }>
+						{ error }
+					</Notice>
 				) }
-				value={ data.key }
-				onChange={ ( key ) => updateData( { key: makeKey( key ) } ) }
-			/>
-			<TextareaControl
-				__nextHasNoMarginBottom
-				label={ __( 'Description', 'assemblypress' ) }
-				value={ data.description }
-				onChange={ ( description ) => updateData( { description } ) }
-			/>
-			<TextControl
-				__next40pxDefaultSize
-				__nextHasNoMarginBottom
-				label={ __( 'Order', 'assemblypress' ) }
-				type="number"
-				value={ data.order }
-				onChange={ ( order ) => updateData( { order } ) }
-			/>
-			<div className="assemblypress-field-modal__footer">
+				<TextControl
+					__next40pxDefaultSize
+					__nextHasNoMarginBottom
+					label={ __( 'Label', 'assemblypress' ) }
+					value={ data.label }
+					onChange={ ( label ) => updateData( { label } ) }
+				/>
+				<TextControl
+					__next40pxDefaultSize
+					__nextHasNoMarginBottom
+					label={ __( 'Key', 'assemblypress' ) }
+					help={ __(
+						'Lowercase letters, numbers, and underscores only.',
+						'assemblypress'
+					) }
+					value={ data.key }
+					onChange={ ( key ) =>
+						updateData( { key: makeKey( key ) } )
+					}
+				/>
+				<TextareaControl
+					__nextHasNoMarginBottom
+					label={ __( 'Description', 'assemblypress' ) }
+					value={ data.description }
+					onChange={ ( description ) =>
+						updateData( { description } )
+					}
+				/>
+				<TextControl
+					__next40pxDefaultSize
+					__nextHasNoMarginBottom
+					label={ __( 'Order', 'assemblypress' ) }
+					type="number"
+					value={ data.order }
+					onChange={ ( order ) => updateData( { order } ) }
+				/>
+			</div>
+			<div className="assemblypress-section-detail__footer">
 				<Button
 					__next40pxDefaultSize
 					variant="tertiary"
@@ -835,7 +860,7 @@ function ProfileGroupModal( { groupItem, onClose, onSaved } ) {
 						: __( 'Save', 'assemblypress' ) }
 				</Button>
 			</div>
-		</Modal>
+		</aside>
 	);
 }
 
@@ -925,7 +950,7 @@ function ProfileFieldsScreen() {
 	const [ isLoading, setIsLoading ] = useState( true );
 	const [ error, setError ] = useState( '' );
 	const [ modalField, setModalField ] = useState( null );
-	const [ modalGroup, setModalGroup ] = useState( null );
+	const [ detailGroup, setDetailGroup ] = useState( null );
 	const [ deleteFields, setDeleteFields ] = useState( EMPTY_ARRAY );
 	const [ deleteGroup, setDeleteGroup ] = useState( null );
 	const [ selection, setSelection ] = useState( EMPTY_ARRAY );
@@ -1243,6 +1268,9 @@ function ProfileFieldsScreen() {
 			}
 			return nextGroups;
 		} );
+		setDetailGroup( ( current ) =>
+			current?.id === deleted.id ? null : current
+		);
 	}
 
 	function fieldCountForGroup( groupId ) {
@@ -1271,7 +1299,13 @@ function ProfileFieldsScreen() {
 					{ error }
 				</Notice>
 			) }
-			<div className="assemblypress-profile-builder">
+			<div
+				className={
+					detailGroup
+						? 'assemblypress-profile-builder has-section-detail'
+						: 'assemblypress-profile-builder'
+				}
+			>
 				<aside
 					className="assemblypress-profile-builder__sidebar"
 					aria-label={ __( 'Profile sections', 'assemblypress' ) }
@@ -1313,7 +1347,7 @@ function ProfileFieldsScreen() {
 						variant="secondary"
 						icon={ plus }
 						onClick={ () =>
-							setModalGroup( {
+							setDetailGroup( {
 								...emptyGroup,
 								order:
 									Math.max(
@@ -1352,7 +1386,7 @@ function ProfileFieldsScreen() {
 									variant="secondary"
 									icon={ pencil }
 									onClick={ () =>
-										setModalGroup( selectedGroup )
+										setDetailGroup( selectedGroup )
 									}
 								>
 									{ __( 'Edit section', 'assemblypress' ) }
@@ -1410,6 +1444,13 @@ function ProfileFieldsScreen() {
 						/>
 					</div>
 				</section>
+				{ detailGroup && (
+					<ProfileGroupDetail
+						groupItem={ detailGroup }
+						onClose={ () => setDetailGroup( null ) }
+						onSaved={ onSavedGroup }
+					/>
+				) }
 			</div>
 			{ modalField && (
 				<ProfileFieldModal
@@ -1417,13 +1458,6 @@ function ProfileFieldsScreen() {
 					groups={ groups }
 					onClose={ () => setModalField( null ) }
 					onSaved={ onSavedField }
-				/>
-			) }
-			{ modalGroup && (
-				<ProfileGroupModal
-					groupItem={ modalGroup }
-					onClose={ () => setModalGroup( null ) }
-					onSaved={ onSavedGroup }
 				/>
 			) }
 			{ !! deleteFields.length && (

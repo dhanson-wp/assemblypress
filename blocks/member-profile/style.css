@@ -1,0 +1,20 @@
+.wp-block-assemblypress-member-profile .assemblypress-member-profile__group {
+	margin-top: 1.5em;
+}
+
+.wp-block-assemblypress-member-profile .assemblypress-member-profile__fields,
+.wp-block-assemblypress-member-profile .assemblypress-profile-field__fields {
+	margin-left: 0;
+}
+
+.wp-block-assemblypress-member-profile .assemblypress-profile-field__item {
+	margin-top: 0.75em;
+}
+
+.wp-block-assemblypress-member-profile .assemblypress-profile-field__item dt {
+	font-weight: 600;
+}
+
+.wp-block-assemblypress-member-profile .assemblypress-profile-field__item dd {
+	margin-left: 0;
+}

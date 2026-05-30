@@ -1,0 +1,28 @@
+.wp-block-assemblypress-member-directory .assemblypress-editor-preview {
+	border: 1px solid #ddd;
+	font-size: 13px;
+	line-height: 1.4;
+	padding: 12px 14px;
+}
+
+.wp-block-assemblypress-member-directory .assemblypress-editor-preview > * {
+	margin-bottom: 0;
+	margin-top: 0;
+}
+
+.wp-block-assemblypress-member-directory .assemblypress-editor-preview > * + * {
+	margin-top: 6px;
+}
+
+.wp-block-assemblypress-member-directory .assemblypress-editor-preview strong {
+	display: block;
+	font-size: 13px;
+}
+
+.wp-block-assemblypress-member-directory .assemblypress-editor-preview__label,
+.wp-block-assemblypress-member-directory .assemblypress-editor-preview__meta {
+	color: #757575;
+	display: block;
+	font-size: 12px;
+}
+}

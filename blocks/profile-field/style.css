@@ -1,0 +1,11 @@
+.wp-block-assemblypress-profile-field .assemblypress-profile-field__fields {
+	margin-left: 0;
+}
+
+.wp-block-assemblypress-profile-field .assemblypress-profile-field__item dt {
+	font-weight: 600;
+}
+
+.wp-block-assemblypress-profile-field .assemblypress-profile-field__item dd {
+	margin-left: 0;
+}

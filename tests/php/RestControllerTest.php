@@ -833,6 +833,97 @@ class RestControllerTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Current member profile route rejects non-object field payloads.
+	 *
+	 * @return void
+	 */
+	public function test_me_profile_rejects_invalid_fields_payload() {
+		Profile_Fields::seed_defaults();
+
+		wp_set_current_user( $this->subscriber_id );
+
+		$response = $this->dispatch(
+			'POST',
+			'/assemblypress/v1/me/profile',
+			array(
+				'fields' => 'display_name=Nope',
+			)
+		);
+		$data     = $response->get_data();
+
+		$this->assertSame( 400, $response->get_status() );
+		$this->assertSame( 'rest_invalid_param', $data['code'] );
+	}
+
+	/**
+	 * Current member profile route rejects list-shaped field payloads.
+	 *
+	 * @return void
+	 */
+	public function test_me_profile_rejects_list_shaped_fields_payload() {
+		Profile_Fields::seed_defaults();
+
+		wp_set_current_user( $this->subscriber_id );
+
+		$response = $this->dispatch(
+			'POST',
+			'/assemblypress/v1/me/profile',
+			array(
+				'fields' => array( 'display_name' ),
+			)
+		);
+		$data     = $response->get_data();
+
+		$this->assertSame( 400, $response->get_status() );
+		$this->assertSame( 'rest_invalid_param', $data['code'] );
+	}
+
+	/**
+	 * Current member profile route validates submitted values before writes.
+	 *
+	 * @return void
+	 */
+	public function test_me_profile_validates_before_persisting_values() {
+		Profile_Fields::seed_defaults();
+
+		$about_group = Profile_Field_Groups::get_group( 'about' );
+		$field       = Profile_Fields::create_field(
+			$this->field_payload(
+				'required_note',
+				'Required Note',
+				array(
+					'visibility' => 'private',
+					'required'   => true,
+					'group_id'   => $about_group['id'],
+				)
+			)
+		);
+
+		$this->assertNotWPError( $field );
+
+		$user_id = self::factory()->user->create( array( 'display_name' => 'Original Rest Name' ) );
+		wp_set_current_user( $user_id );
+
+		$response = $this->dispatch(
+			'POST',
+			'/assemblypress/v1/me/profile',
+			array(
+				'fields' => array(
+					'display_name'  => 'Partial Rest Name',
+					'location'      => 'Partial Rest Place',
+					'required_note' => '',
+				),
+			)
+		);
+		$data     = $response->get_data();
+
+		$this->assertSame( 400, $response->get_status() );
+		$this->assertSame( 'assemblypress_required_field', $data['code'] );
+		$this->assertSame( 'Original Rest Name', get_userdata( $user_id )->display_name );
+		$this->assertSame( '', get_user_meta( $user_id, 'assemblypress_location', true ) );
+	}
+
+	/**
 	 * Dispatch a REST request.
 	 *
 	 * @param string $method HTTP method.

@@ -128,7 +128,13 @@ final class Blocks {
 		}
 
 		$field['value'] = Profile_Fields::get_value( $user, $field );
-		return '<div ' . get_block_wrapper_attributes( array( 'class' => 'assemblypress-profile-field' ) ) . '>' . self::render_field_definition( $field ) . '</div>';
+		$field_output   = self::render_field_definition( $field );
+
+		if ( '' === $field_output ) {
+			return '';
+		}
+
+		return '<div ' . get_block_wrapper_attributes( array( 'class' => 'assemblypress-profile-field' ) ) . '><dl class="assemblypress-profile-field__fields">' . $field_output . '</dl></div>';
 	}
 
 	/**
@@ -142,6 +148,7 @@ final class Blocks {
 		}
 
 		$user   = wp_get_current_user();
+		$notice = '';
 		$fields = array_filter(
 			Profile_Fields::get_fields(),
 			static function ( $field ) {
@@ -150,16 +157,41 @@ final class Blocks {
 		);
 
 		$request_method = isset( $_SERVER['REQUEST_METHOD'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_METHOD'] ) ) : '';
-		if ( 'POST' === $request_method && isset( $_POST['assemblypress_profile_nonce'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['assemblypress_profile_nonce'] ) ), 'assemblypress_update_profile' ) ) {
-			$values = array();
-			foreach ( $fields as $field ) {
-				$input_key               = 'assemblypress_' . $field['key'];
-				$values[ $field['key'] ] = isset( $_POST[ $input_key ] ) ? sanitize_text_field( wp_unslash( $_POST[ $input_key ] ) ) : '';
+		if ( 'POST' === $request_method ) {
+			$nonce = isset( $_POST['assemblypress_profile_nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['assemblypress_profile_nonce'] ) ) : '';
+
+			if ( ! wp_verify_nonce( $nonce, 'assemblypress_update_profile' ) ) {
+				$notice = self::render_profile_notice(
+					__( 'Your profile could not be saved. Please refresh and try again.', 'assemblypress' ),
+					'error'
+				);
+			} else {
+				$values = array();
+				foreach ( $fields as $field ) {
+					$input_key = 'assemblypress_' . $field['key'];
+
+					if ( 'checkbox' === $field['type'] ) {
+						$values[ $field['key'] ] = isset( $_POST[ $input_key ] ) ? '1' : '';
+						continue;
+					}
+
+					// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Profile_Fields::update_member_profile() sanitizes values by field type.
+					$values[ $field['key'] ] = isset( $_POST[ $input_key ] ) ? wp_unslash( $_POST[ $input_key ] ) : '';
+				}
+
+				$result = Profile_Fields::update_member_profile( $user->ID, $values );
+
+				if ( is_wp_error( $result ) ) {
+					$notice = self::render_profile_notice( $result->get_error_message(), 'error' );
+				} else {
+					$user   = get_userdata( $user->ID );
+					$notice = self::render_profile_notice( __( 'Profile saved.', 'assemblypress' ), 'success' );
+				}
 			}
-			Profile_Fields::update_member_profile( $user->ID, $values );
 		}
 
-		$output = '<form method="post" ' . get_block_wrapper_attributes( array( 'class' => 'assemblypress-edit-profile-form' ) ) . '>';
+		$output  = '<form method="post" ' . get_block_wrapper_attributes( array( 'class' => 'assemblypress-edit-profile-form' ) ) . '>';
+		$output .= $notice;
 		foreach ( Profile_Fields::group_fields( $fields ) as $group ) {
 			$output .= '<fieldset class="assemblypress-edit-profile-form__group">';
 			$output .= '<legend>' . esc_html( $group['label'] ) . '</legend>';
@@ -178,6 +210,20 @@ final class Blocks {
 		$output .= '</form>';
 
 		return $output;
+	}
+
+	/**
+	 * Render profile editing feedback.
+	 *
+	 * @param string $message Notice message.
+	 * @param string $status  Notice status.
+	 * @return string
+	 */
+	private static function render_profile_notice( $message, $status ) {
+		$status = 'success' === $status ? 'success' : 'error';
+		$role   = 'error' === $status ? 'alert' : 'status';
+
+		return '<div class="assemblypress-edit-profile-form__notice is-' . esc_attr( $status ) . '" role="' . esc_attr( $role ) . '">' . esc_html( $message ) . '</div>';
 	}
 
 	/**
@@ -223,16 +269,21 @@ final class Blocks {
 	 * @return string
 	 */
 	private static function render_input( $name, $field, $value ) {
+		$required = ! empty( $field['required'] ) ? ' required="required"' : '';
+
 		if ( 'textarea' === $field['type'] ) {
-			return '<textarea id="' . esc_attr( $name ) . '" name="' . esc_attr( $name ) . '">' . esc_textarea( (string) $value ) . '</textarea>';
+			return '<textarea id="' . esc_attr( $name ) . '" name="' . esc_attr( $name ) . '"' . $required . '>' . esc_textarea( (string) $value ) . '</textarea>';
 		}
 
 		if ( 'checkbox' === $field['type'] ) {
-			return '<input id="' . esc_attr( $name ) . '" name="' . esc_attr( $name ) . '" type="checkbox" value="1" ' . checked( (bool) $value, true, false ) . ' />';
+			return '<input id="' . esc_attr( $name ) . '" name="' . esc_attr( $name ) . '" type="checkbox" value="1" ' . checked( (bool) $value, true, false ) . $required . ' />';
 		}
 
 		if ( 'select' === $field['type'] ) {
-			$output = '<select id="' . esc_attr( $name ) . '" name="' . esc_attr( $name ) . '">';
+			$output = '<select id="' . esc_attr( $name ) . '" name="' . esc_attr( $name ) . '"' . $required . '>';
+			if ( empty( $field['required'] ) ) {
+				$output .= '<option value=""></option>';
+			}
 			foreach ( $field['options'] as $option ) {
 				$option_value = $option['value'] ?? '';
 				$output      .= '<option value="' . esc_attr( $option_value ) . '" ' . selected( $value, $option_value, false ) . '>' . esc_html( $option['label'] ?? $option_value ) . '</option>';
@@ -241,7 +292,11 @@ final class Blocks {
 			return $output;
 		}
 
+		if ( 'image' === $field['type'] ) {
+			return '<input id="' . esc_attr( $name ) . '" name="' . esc_attr( $name ) . '" type="number" min="0" step="1" inputmode="numeric" value="' . esc_attr( (string) absint( $value ) ) . '"' . $required . ' />';
+		}
+
 		$type = 'email' === $field['type'] ? 'email' : ( 'url' === $field['type'] ? 'url' : 'text' );
-		return '<input id="' . esc_attr( $name ) . '" name="' . esc_attr( $name ) . '" type="' . esc_attr( $type ) . '" value="' . esc_attr( (string) $value ) . '" />';
+		return '<input id="' . esc_attr( $name ) . '" name="' . esc_attr( $name ) . '" type="' . esc_attr( $type ) . '" value="' . esc_attr( (string) $value ) . '"' . $required . ' />';
 	}
 }

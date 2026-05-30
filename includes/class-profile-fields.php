@@ -689,6 +689,65 @@ final class Profile_Fields {
 			return new WP_Error( 'assemblypress_member_not_found', __( 'Member not found.', 'assemblypress' ), array( 'status' => 404 ) );
 		}
 
+		if ( ! is_array( $values ) ) {
+			return new WP_Error( 'assemblypress_invalid_profile_values', __( 'Profile values must be submitted as an object.', 'assemblypress' ), array( 'status' => 400 ) );
+		}
+
+		$updates = self::prepare_member_profile_updates( $values );
+
+		if ( is_wp_error( $updates ) ) {
+			return $updates;
+		}
+
+		$user_updates = array( 'ID' => $user_id );
+		$description  = null;
+		$meta_updates = array();
+
+		foreach ( $updates as $update ) {
+			$field = $update['field'];
+			$value = $update['value'];
+
+			if ( 'user' === $field['source'] ) {
+				if ( 'display_name' === $field['user_key'] ) {
+					$user_updates['display_name'] = $value;
+				} elseif ( 'user_url' === $field['user_key'] ) {
+					$user_updates['user_url'] = $value;
+				} elseif ( 'description' === $field['user_key'] ) {
+					$description = $value;
+				}
+			} else {
+				$meta_updates[ $field['meta_key'] ] = $value;
+			}
+		}
+
+		if ( count( $user_updates ) > 1 ) {
+			$result = wp_update_user( $user_updates );
+
+			if ( is_wp_error( $result ) ) {
+				return $result;
+			}
+		}
+
+		if ( null !== $description ) {
+			update_user_meta( $user_id, 'description', $description );
+		}
+
+		foreach ( $meta_updates as $meta_key => $value ) {
+			update_user_meta( $user_id, $meta_key, $value );
+		}
+
+		return self::get_member_profile( $user_id, true );
+	}
+
+	/**
+	 * Prepare editable profile value updates before persisting anything.
+	 *
+	 * @param array $values Submitted values keyed by field key.
+	 * @return array|WP_Error
+	 */
+	private static function prepare_member_profile_updates( $values ) {
+		$updates = array();
+
 		foreach ( self::get_fields() as $field ) {
 			if ( empty( $field['editable'] ) || ! array_key_exists( $field['key'], $values ) ) {
 				continue;
@@ -708,14 +767,13 @@ final class Profile_Fields {
 				);
 			}
 
-			if ( 'user' === $field['source'] ) {
-				self::update_user_core_value( $user_id, $field, $value );
-			} else {
-				update_user_meta( $user_id, $field['meta_key'], $value );
-			}
+			$updates[] = array(
+				'field' => $field,
+				'value' => $value,
+			);
 		}
 
-		return self::get_member_profile( $user_id, true );
+		return $updates;
 	}
 
 	/**
@@ -738,40 +796,6 @@ final class Profile_Fields {
 		}
 
 		return get_user_meta( $user->ID, $field['meta_key'], true );
-	}
-
-	/**
-	 * Update a core user value.
-	 *
-	 * @param int   $user_id User ID.
-	 * @param array $field   Field definition.
-	 * @param mixed $value   Field value.
-	 * @return void
-	 */
-	private static function update_user_core_value( $user_id, $field, $value ) {
-		if ( 'display_name' === $field['user_key'] ) {
-			wp_update_user(
-				array(
-					'ID'           => $user_id,
-					'display_name' => $value,
-				)
-			);
-			return;
-		}
-
-		if ( 'user_url' === $field['user_key'] ) {
-			wp_update_user(
-				array(
-					'ID'       => $user_id,
-					'user_url' => $value,
-				)
-			);
-			return;
-		}
-
-		if ( 'description' === $field['user_key'] ) {
-			update_user_meta( $user_id, 'description', $value );
-		}
 	}
 
 	/**

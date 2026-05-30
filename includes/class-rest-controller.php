@@ -142,6 +142,7 @@ final class Rest_Controller {
 					'methods'             => WP_REST_Server::CREATABLE,
 					'callback'            => array( self::class, 'update_my_profile' ),
 					'permission_callback' => 'is_user_logged_in',
+					'args'                => self::me_profile_args(),
 				),
 				'schema' => array( self::class, 'get_member_profile_schema' ),
 			)
@@ -381,6 +382,20 @@ final class Rest_Controller {
 	}
 
 	/**
+	 * Current-member profile mutation args.
+	 *
+	 * @return array
+	 */
+	private static function me_profile_args() {
+		return array(
+			'fields' => array(
+				'type'              => 'object',
+				'validate_callback' => array( self::class, 'validate_profile_values_arg' ),
+			),
+		);
+	}
+
+	/**
 	 * Profile field request args.
 	 *
 	 * @param bool $create Whether the args are for create requests.
@@ -538,6 +553,26 @@ final class Rest_Controller {
 	 */
 	public static function validate_required_text_arg( $value ) {
 		return is_string( $value ) && '' !== trim( $value );
+	}
+
+	/**
+	 * Validate current-member profile values.
+	 *
+	 * @param mixed $value Submitted value.
+	 * @return bool
+	 */
+	public static function validate_profile_values_arg( $value ) {
+		if ( ! is_array( $value ) ) {
+			return false;
+		}
+
+		foreach ( array_keys( $value ) as $key ) {
+			if ( ! is_string( $key ) ) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	/**
@@ -977,7 +1012,17 @@ final class Rest_Controller {
 	 */
 	public static function update_my_profile( WP_REST_Request $request ) {
 		$params = $request->get_json_params();
-		$params = $params ? $params : array();
-		return Profile_Fields::update_member_profile( get_current_user_id(), $params['fields'] ?? $params );
+
+		if ( null === $params ) {
+			$params = array();
+		}
+
+		if ( ! is_array( $params ) ) {
+			return new \WP_Error( 'assemblypress_invalid_profile_payload', __( 'Profile payload must be a JSON object.', 'assemblypress' ), array( 'status' => 400 ) );
+		}
+
+		$values = array_key_exists( 'fields', $params ) ? $params['fields'] : $params;
+
+		return Profile_Fields::update_member_profile( get_current_user_id(), $values );
 	}
 }
