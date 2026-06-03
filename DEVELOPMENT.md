@@ -104,6 +104,26 @@ Current storage:
 - Profile values are stored in registered WordPress user meta.
 - This storage description is the current Member/Profile Foundation path, not a storage decision for later forum, moderation, onboarding, account-state, or broader community architecture.
 
+## Jetpack Forms Profile Editing Spike
+
+The current spike keeps the temporary Profile Value Editor in place and proves only the adapter boundary. `AssemblyPress\Profile_Form_Adapter` maps parsed Jetpack-shaped field blocks to AssemblyPress profile field definitions and the existing `/assemblypress/v1/me/profile` value payload. It registers no product UI.
+
+Reusable Jetpack Forms patterns:
+
+- shared field controls for required state, Name/ID, width, and field styling
+- parent form plus constrained child field blocks
+- nested label/input/options/dropzone composition
+- editor-side field wrapping and saved-form direction as a later product hypothesis
+
+Rejected or deferred for the Member/Profile Foundation slice:
+
+- contact-form submission semantics
+- feedback storage, email notifications, webhooks, CRM/marketing integrations, and spam workflows
+- file/media uploads until AssemblyPress has a profile media policy
+- full form builder behavior, onboarding, member status, canonical routes, and forums/moderation
+
+Recommendation: keep Jetpack Forms as the editor UX source material, but keep AssemblyPress profile schema, profile values, permissions, validation, visibility, and saved value mapping native. This should remain a spike until one parent profile form and a small set of profile field blocks can be tested against the real profile model without replacing the temporary editor.
+
 ## Current REST Contract
 
 The active profile schema REST contract is intentionally small:

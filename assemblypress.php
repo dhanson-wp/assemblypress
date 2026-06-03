@@ -26,6 +26,7 @@ require_once ASSEMBLYPRESS_PLUGIN_DIR . 'includes/class-capabilities.php';
 require_once ASSEMBLYPRESS_PLUGIN_DIR . 'includes/class-config-entities.php';
 require_once ASSEMBLYPRESS_PLUGIN_DIR . 'includes/class-profile-field-groups.php';
 require_once ASSEMBLYPRESS_PLUGIN_DIR . 'includes/class-profile-fields.php';
+require_once ASSEMBLYPRESS_PLUGIN_DIR . 'includes/class-profile-form-adapter.php';
 require_once ASSEMBLYPRESS_PLUGIN_DIR . 'includes/class-rest-controller.php';
 require_once ASSEMBLYPRESS_PLUGIN_DIR . 'includes/class-blocks.php';
 require_once ASSEMBLYPRESS_PLUGIN_DIR . 'includes/class-admin.php';
