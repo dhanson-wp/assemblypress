@@ -5,6 +5,7 @@
  * @package AssemblyPress
  */
 
+use AssemblyPress\Blocks;
 use AssemblyPress\Profile_Fields;
 use AssemblyPress\Profile_Field_Groups;
 use AssemblyPress\Rest_Controller;
@@ -25,7 +26,11 @@ class ProfileFieldsTest extends WP_UnitTestCase {
 		unset( $_POST['assemblypress_location'] );
 		unset( $_POST['assemblypress_website'] );
 		unset( $_POST['assemblypress_avatar'] );
+		unset( $_GET['assemblypress_profile_status'] );
+		unset( $_GET['assemblypress_profile_notice'] );
 		unset( $_SERVER['REQUEST_METHOD'] );
+		unset( $_SERVER['HTTP_REFERER'] );
+		$_SERVER['REQUEST_URI'] = '/';
 		wp_set_current_user( 0 );
 
 		parent::tear_down();
@@ -641,17 +646,18 @@ class ProfileFieldsTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * The temporary profile editor reports successful saves and reads updated values.
+	 * The temporary profile editor redirects after saves so read blocks render updated values.
 	 *
 	 * @return void
 	 */
-	public function test_edit_profile_form_reports_success_and_reads_updated_values() {
+	public function test_edit_profile_form_redirects_after_save_and_reads_updated_values() {
 		Profile_Fields::seed_defaults();
 
 		$user_id = self::factory()->user->create( array( 'display_name' => 'Before Save' ) );
 		wp_set_current_user( $user_id );
 
 		$_SERVER['REQUEST_METHOD']          = 'POST';
+		$_SERVER['REQUEST_URI']             = '/profile-loop-smoke/';
 		$_POST['assemblypress_profile_nonce'] = wp_create_nonce( 'assemblypress_update_profile' );
 		$_POST['assemblypress_display_name']  = 'After Save';
 		$_POST['assemblypress_bio']           = 'Updated bio';
@@ -659,34 +665,125 @@ class ProfileFieldsTest extends WP_UnitTestCase {
 		$_POST['assemblypress_website']       = 'https://example.org';
 		$_POST['assemblypress_avatar']        = '0';
 
-		$output = do_blocks( '<!-- wp:assemblypress/edit-profile-form /-->' );
+		$redirect = $this->capture_profile_form_redirect();
 
-		$this->assertStringContainsString( 'Profile saved.', $output );
-		$this->assertStringContainsString( 'value="After Save"', $output );
+		$this->assertStringContainsString( 'assemblypress_profile_status=success', $redirect );
+		$this->assertStringContainsString( 'Profile%20saved.', $redirect );
 		$this->assertSame( 'After Save', get_userdata( $user_id )->display_name );
 		$this->assertSame( 'Updated location', get_user_meta( $user_id, 'assemblypress_location', true ) );
+
+		$this->set_redirect_notice_from_url( $redirect );
+
+		$output = do_blocks(
+			'<!-- wp:assemblypress/member-profile {"userId":' . (int) $user_id . '} /-->' .
+			'<!-- wp:assemblypress/edit-profile-form /-->'
+		);
+
+		$this->assertStringContainsString( 'Profile saved.', $output );
+		$this->assertStringContainsString( 'After Save', $output );
+		$this->assertStringContainsString( 'Updated location', $output );
+		$this->assertStringContainsString( 'value="After Save"', $output );
 	}
 
 	/**
-	 * The temporary profile editor reports validation errors without partial writes.
+	 * The temporary profile editor redirects after validation errors without partial writes.
 	 *
 	 * @return void
 	 */
-	public function test_edit_profile_form_reports_validation_errors_without_partial_writes() {
+	public function test_edit_profile_form_redirects_validation_errors_without_partial_writes() {
 		Profile_Fields::seed_defaults();
 
 		$user_id = self::factory()->user->create( array( 'display_name' => 'Before Error' ) );
 		wp_set_current_user( $user_id );
 
 		$_SERVER['REQUEST_METHOD']          = 'POST';
+		$_SERVER['REQUEST_URI']             = '/profile-loop-smoke/';
 		$_POST['assemblypress_profile_nonce'] = wp_create_nonce( 'assemblypress_update_profile' );
 		$_POST['assemblypress_display_name']  = '';
 		$_POST['assemblypress_location']      = 'Should Not Save';
 
+		$redirect = $this->capture_profile_form_redirect();
+
+		$this->assertStringContainsString( 'assemblypress_profile_status=error', $redirect );
+		$this->assertSame( 'Before Error', get_userdata( $user_id )->display_name );
+		$this->assertSame( '', get_user_meta( $user_id, 'assemblypress_location', true ) );
+
+		$this->set_redirect_notice_from_url( $redirect );
+
 		$output = do_blocks( '<!-- wp:assemblypress/edit-profile-form /-->' );
 
 		$this->assertStringContainsString( 'Display name is required.', $output );
-		$this->assertSame( 'Before Error', get_userdata( $user_id )->display_name );
-		$this->assertSame( '', get_user_meta( $user_id, 'assemblypress_location', true ) );
+		$this->assertStringContainsString( 'value="Before Error"', $output );
+	}
+
+	/**
+	 * Private profile field blocks render only for users who can edit that member.
+	 *
+	 * @return void
+	 */
+	public function test_private_profile_field_block_respects_member_visibility() {
+		Profile_Fields::seed_defaults();
+
+		$about_group = Profile_Field_Groups::get_group( 'about' );
+		$field       = Profile_Fields::create_field(
+			array(
+				'key'        => 'private_note',
+				'label'      => 'Private Note',
+				'type'       => 'text',
+				'visibility' => 'private',
+				'editable'   => true,
+				'required'   => false,
+				'group_id'   => $about_group['id'],
+				'order'      => 90,
+			)
+		);
+
+		$this->assertNotWPError( $field );
+
+		$user_id = self::factory()->user->create();
+		update_user_meta( $user_id, 'assemblypress_private_note', 'Owner-only value' );
+
+		$block = '<!-- wp:assemblypress/profile-field {"fieldKey":"private_note","userId":' . (int) $user_id . '} /-->';
+
+		wp_set_current_user( 0 );
+		$this->assertSame( '', do_blocks( $block ) );
+
+		wp_set_current_user( $user_id );
+		$this->assertStringContainsString( 'Owner-only value', do_blocks( $block ) );
+	}
+
+	/**
+	 * Capture the temporary profile editor redirect without exiting tests.
+	 *
+	 * @return string
+	 */
+	private function capture_profile_form_redirect() {
+		$redirect = '';
+		$callback = static function ( $location ) use ( &$redirect ) {
+			$redirect = $location;
+			return false;
+		};
+
+		add_filter( 'wp_redirect', $callback );
+		Blocks::maybe_handle_edit_profile_form_submission();
+		remove_filter( 'wp_redirect', $callback );
+
+		$this->assertNotSame( '', $redirect );
+
+		return $redirect;
+	}
+
+	/**
+	 * Populate request query vars from a captured redirect URL.
+	 *
+	 * @param string $redirect Redirect URL.
+	 * @return void
+	 */
+	private function set_redirect_notice_from_url( $redirect ) {
+		$query = wp_parse_url( $redirect, PHP_URL_QUERY );
+		parse_str( $query ? $query : '', $params );
+
+		$_GET['assemblypress_profile_status'] = $params['assemblypress_profile_status'] ?? '';
+		$_GET['assemblypress_profile_notice'] = $params['assemblypress_profile_notice'] ?? '';
 	}
 }

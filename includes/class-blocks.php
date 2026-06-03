@@ -127,6 +127,10 @@ final class Blocks {
 			return '';
 		}
 
+		if ( 'private' === $field['visibility'] && ! current_user_can( 'edit_user', $user_id ) ) {
+			return '';
+		}
+
 		$field['value'] = Profile_Fields::get_value( $user, $field );
 		$field_output   = self::render_field_definition( $field );
 
@@ -135,6 +139,65 @@ final class Blocks {
 		}
 
 		return '<div ' . get_block_wrapper_attributes( array( 'class' => 'assemblypress-profile-field' ) ) . '><dl class="assemblypress-profile-field__fields">' . $field_output . '</dl></div>';
+	}
+
+	/**
+	 * Handle temporary profile value editor submissions before blocks render.
+	 *
+	 * @return void
+	 */
+	public static function maybe_handle_edit_profile_form_submission() {
+		$request_method = isset( $_SERVER['REQUEST_METHOD'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_METHOD'] ) ) : '';
+		if ( 'POST' !== $request_method || ! isset( $_POST['assemblypress_profile_nonce'] ) ) {
+			return;
+		}
+
+		$status = 'error';
+		$notice = __( 'Your profile could not be saved. Please refresh and try again.', 'assemblypress' );
+
+		if ( is_user_logged_in() ) {
+			$nonce = sanitize_text_field( wp_unslash( $_POST['assemblypress_profile_nonce'] ) );
+
+			if ( wp_verify_nonce( $nonce, 'assemblypress_update_profile' ) ) {
+				$result = Profile_Fields::update_member_profile(
+					get_current_user_id(),
+					self::get_submitted_profile_form_values()
+				);
+
+				if ( is_wp_error( $result ) ) {
+					$notice = $result->get_error_message();
+				} else {
+					$status = 'success';
+					$notice = __( 'Profile saved.', 'assemblypress' );
+				}
+			}
+		}
+
+		$redirect_url = remove_query_arg( array( 'assemblypress_profile_status', 'assemblypress_profile_notice' ), self::get_profile_form_redirect_url() );
+		$redirect_url = add_query_arg(
+			array(
+				'assemblypress_profile_status' => $status,
+				'assemblypress_profile_notice' => $notice,
+			),
+			$redirect_url
+		);
+
+		if ( wp_safe_redirect( $redirect_url ) ) {
+			exit;
+		}
+	}
+
+	/**
+	 * Get the temporary profile value editor redirect target.
+	 *
+	 * @return string
+	 */
+	private static function get_profile_form_redirect_url() {
+		if ( isset( $_SERVER['REQUEST_URI'] ) ) {
+			return home_url( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) );
+		}
+
+		return wp_get_referer() ? wp_get_referer() : home_url( '/' );
 	}
 
 	/**
@@ -147,48 +210,9 @@ final class Blocks {
 			return '<p ' . get_block_wrapper_attributes( array( 'class' => 'assemblypress-edit-profile-form' ) ) . '>' . esc_html__( 'Log in to edit your profile.', 'assemblypress' ) . '</p>';
 		}
 
-		$user   = wp_get_current_user();
-		$notice = '';
-		$fields = array_filter(
-			Profile_Fields::get_fields(),
-			static function ( $field ) {
-				return ! empty( $field['editable'] ) && 'social_links' !== $field['type'];
-			}
-		);
-
-		$request_method = isset( $_SERVER['REQUEST_METHOD'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_METHOD'] ) ) : '';
-		if ( 'POST' === $request_method ) {
-			$nonce = isset( $_POST['assemblypress_profile_nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['assemblypress_profile_nonce'] ) ) : '';
-
-			if ( ! wp_verify_nonce( $nonce, 'assemblypress_update_profile' ) ) {
-				$notice = self::render_profile_notice(
-					__( 'Your profile could not be saved. Please refresh and try again.', 'assemblypress' ),
-					'error'
-				);
-			} else {
-				$values = array();
-				foreach ( $fields as $field ) {
-					$input_key = 'assemblypress_' . $field['key'];
-
-					if ( 'checkbox' === $field['type'] ) {
-						$values[ $field['key'] ] = isset( $_POST[ $input_key ] ) ? '1' : '';
-						continue;
-					}
-
-					// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Profile_Fields::update_member_profile() sanitizes values by field type.
-					$values[ $field['key'] ] = isset( $_POST[ $input_key ] ) ? wp_unslash( $_POST[ $input_key ] ) : '';
-				}
-
-				$result = Profile_Fields::update_member_profile( $user->ID, $values );
-
-				if ( is_wp_error( $result ) ) {
-					$notice = self::render_profile_notice( $result->get_error_message(), 'error' );
-				} else {
-					$user   = get_userdata( $user->ID );
-					$notice = self::render_profile_notice( __( 'Profile saved.', 'assemblypress' ), 'success' );
-				}
-			}
-		}
+		$user   = get_userdata( get_current_user_id() );
+		$notice = self::get_profile_form_notice();
+		$fields = self::get_profile_form_fields();
 
 		$output  = '<form method="post" ' . get_block_wrapper_attributes( array( 'class' => 'assemblypress-edit-profile-form' ) ) . '>';
 		$output .= $notice;
@@ -210,6 +234,62 @@ final class Blocks {
 		$output .= '</form>';
 
 		return $output;
+	}
+
+	/**
+	 * Get editable fields for the temporary profile value editor.
+	 *
+	 * @return array
+	 */
+	private static function get_profile_form_fields() {
+		return array_filter(
+			Profile_Fields::get_fields(),
+			static function ( $field ) {
+				return ! empty( $field['editable'] ) && 'social_links' !== $field['type'];
+			}
+		);
+	}
+
+	/**
+	 * Get submitted temporary profile value editor values.
+	 *
+	 * @return array
+	 */
+	private static function get_submitted_profile_form_values() {
+		$values = array();
+
+		foreach ( self::get_profile_form_fields() as $field ) {
+			$input_key = 'assemblypress_' . $field['key'];
+
+			if ( 'checkbox' === $field['type'] ) {
+				// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce is verified before submitted profile form values are read.
+				$values[ $field['key'] ] = isset( $_POST[ $input_key ] ) ? '1' : '';
+				continue;
+			}
+
+			// phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Nonce is verified before reads; Profile_Fields::update_member_profile() sanitizes values by field type.
+			$values[ $field['key'] ] = isset( $_POST[ $input_key ] ) ? wp_unslash( $_POST[ $input_key ] ) : '';
+		}
+
+		return $values;
+	}
+
+	/**
+	 * Get redirected temporary profile value editor feedback.
+	 *
+	 * @return string
+	 */
+	private static function get_profile_form_notice() {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Redirected feedback is display-only and escaped before output.
+		$status = isset( $_GET['assemblypress_profile_status'] ) ? sanitize_key( wp_unslash( $_GET['assemblypress_profile_status'] ) ) : '';
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Redirected feedback is display-only and escaped before output.
+		$notice = isset( $_GET['assemblypress_profile_notice'] ) ? sanitize_text_field( wp_unslash( $_GET['assemblypress_profile_notice'] ) ) : '';
+
+		if ( ! $status || ! $notice ) {
+			return '';
+		}
+
+		return self::render_profile_notice( $notice, $status );
 	}
 
 	/**

@@ -45,6 +45,7 @@ final class Plugin {
 		add_action( 'init', array( Profile_Field_Groups::class, 'ensure_starter_groups' ), 15 );
 		add_action( 'init', array( Profile_Fields::class, 'register_user_meta' ), 20 );
 		add_action( 'init', array( Blocks::class, 'register' ), 30 );
+		add_action( 'template_redirect', array( Blocks::class, 'maybe_handle_edit_profile_form_submission' ) );
 		add_action( 'rest_api_init', array( Rest_Controller::class, 'register_routes' ) );
 		add_action( 'admin_menu', array( Admin::class, 'register_menu' ) );
 		add_action( 'admin_enqueue_scripts', array( Admin::class, 'enqueue_assets' ) );

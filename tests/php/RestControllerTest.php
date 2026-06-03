@@ -833,6 +833,40 @@ class RestControllerTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Current member profile updates return the same readable response shape as GET.
+	 *
+	 * @return void
+	 */
+	public function test_me_profile_update_response_supports_fields_filtering() {
+		Profile_Fields::seed_defaults();
+
+		$user_id = self::factory()->user->create( array( 'display_name' => 'Before Filtered Update' ) );
+		wp_set_current_user( $user_id );
+
+		$request = new WP_REST_Request( 'POST', '/assemblypress/v1/me/profile' );
+		$request->set_header( 'Content-Type', 'application/json' );
+		$request->set_query_params( array( '_fields' => 'id,display_name,fields' ) );
+		$request->set_body(
+			wp_json_encode(
+				array(
+					'fields' => array(
+						'display_name' => 'After Filtered Update',
+						'location'     => 'Filtered Place',
+					),
+				)
+			)
+		);
+
+		$response = rest_get_server()->dispatch( $request );
+		$data     = $response->get_data();
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertOnlyKeys( array( 'id', 'display_name', 'fields' ), $data );
+		$this->assertSame( 'After Filtered Update', $data['display_name'] );
+		$this->assertSame( 'Filtered Place', get_user_meta( $user_id, 'assemblypress_location', true ) );
+	}
+
+	/**
 	 * Current member profile route rejects non-object field payloads.
 	 *
 	 * @return void
