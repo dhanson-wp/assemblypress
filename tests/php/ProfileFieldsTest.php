@@ -417,6 +417,99 @@ class ProfileFieldsTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Profile blocks do not treat queried page IDs as member context.
+	 *
+	 * @return void
+	 */
+	public function test_member_profile_block_ignores_queried_page_ids_for_member_context() {
+		Profile_Fields::seed_defaults();
+
+		$user_id = self::factory()->user->create(
+			array(
+				'display_name' => 'Context Member',
+			)
+		);
+		$page_id = self::factory()->post->create(
+			array(
+				'post_type'  => 'page',
+				'post_title' => 'Profile page',
+			)
+		);
+
+		$GLOBALS['wp_query']->queried_object    = get_post( $page_id );
+		$GLOBALS['wp_query']->queried_object_id = $user_id;
+		wp_set_current_user( 0 );
+
+		$this->assertSame( '', do_blocks( '<!-- wp:assemblypress/member-profile /-->' ) );
+
+		wp_set_current_user( $user_id );
+
+		$this->assertStringContainsString( 'Context Member', do_blocks( '<!-- wp:assemblypress/member-profile /-->' ) );
+
+		$this->go_to( '/' );
+	}
+
+	/**
+	 * Explicitly selected missing members do not fall back to the current user.
+	 *
+	 * @return void
+	 */
+	public function test_member_profile_selected_missing_user_does_not_fallback_to_current_user() {
+		Profile_Fields::seed_defaults();
+
+		$user_id = self::factory()->user->create(
+			array(
+				'display_name' => 'Current Member',
+			)
+		);
+		wp_set_current_user( $user_id );
+
+		$output = do_blocks( '<!-- wp:assemblypress/member-profile {"memberSource":"selected","userId":999999} /-->' );
+
+		$this->assertSame( '', $output );
+	}
+
+	/**
+	 * Profile field blocks distinguish current member context from selected members.
+	 *
+	 * @return void
+	 */
+	public function test_profile_field_block_resolves_current_and_selected_members() {
+		Profile_Fields::seed_defaults();
+
+		$current_user_id = self::factory()->user->create();
+		$selected_id     = self::factory()->user->create();
+
+		update_user_meta( $current_user_id, 'assemblypress_location', 'Current Place' );
+		update_user_meta( $selected_id, 'assemblypress_location', 'Selected Place' );
+		wp_set_current_user( $current_user_id );
+
+		$current_output = do_blocks( '<!-- wp:assemblypress/profile-field {"fieldKey":"location"} /-->' );
+		$selected_block = '<!-- wp:assemblypress/profile-field {"fieldKey":"location","memberSource":"selected","userId":' . (int) $selected_id . '} /-->';
+		$missing_output = do_blocks( '<!-- wp:assemblypress/profile-field {"fieldKey":"location","memberSource":"selected","userId":999999} /-->' );
+
+		$this->assertStringContainsString( 'Current Place', $current_output );
+		$this->assertStringContainsString( 'Selected Place', do_blocks( $selected_block ) );
+		$this->assertStringNotContainsString( 'Current Place', do_blocks( $selected_block ) );
+		$this->assertSame( '', $missing_output );
+	}
+
+	/**
+	 * Missing or unknown profile field keys render empty on the frontend.
+	 *
+	 * @return void
+	 */
+	public function test_profile_field_block_with_missing_or_unknown_field_key_renders_empty() {
+		Profile_Fields::seed_defaults();
+
+		$user_id = self::factory()->user->create();
+		wp_set_current_user( $user_id );
+
+		$this->assertSame( '', do_blocks( '<!-- wp:assemblypress/profile-field /-->' ) );
+		$this->assertSame( '', do_blocks( '<!-- wp:assemblypress/profile-field {"fieldKey":"unknown_field"} /-->' ) );
+	}
+
+	/**
 	 * Image fields still render when a real attachment ID exists.
 	 *
 	 * @return void

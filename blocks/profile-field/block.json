@@ -10,11 +10,15 @@
 	"attributes": {
 		"fieldKey": {
 			"type": "string",
-			"default": "bio"
+			"default": ""
 		},
 		"userId": {
 			"type": "number",
 			"default": 0
+		},
+		"memberSource": {
+			"type": "string",
+			"default": "current"
 		}
 	},
 	"supports": {

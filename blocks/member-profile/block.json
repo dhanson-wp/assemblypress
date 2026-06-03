@@ -11,6 +11,10 @@
 		"userId": {
 			"type": "number",
 			"default": 0
+		},
+		"memberSource": {
+			"type": "string",
+			"default": "current"
 		}
 	},
 	"supports": {

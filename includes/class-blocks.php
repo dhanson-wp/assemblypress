@@ -34,7 +34,7 @@ final class Blocks {
 	 * @return string
 	 */
 	public static function render_member_directory( $attributes ) {
-		$limit = isset( $attributes['perPage'] ) ? max( 1, min( 100, (int) $attributes['perPage'] ) ) : 12;
+		$limit = isset( $attributes['perPage'] ) ? max( 1, min( 100, absint( $attributes['perPage'] ) ) ) : 12;
 		$query = new \WP_User_Query(
 			array(
 				'number'  => $limit,
@@ -72,9 +72,10 @@ final class Blocks {
 	 * @return string
 	 */
 	public static function render_member_profile( $attributes ) {
-		$user_id = ! empty( $attributes['userId'] ) ? (int) $attributes['userId'] : get_queried_object_id();
-		if ( ! $user_id || ! get_userdata( $user_id ) ) {
-			$user_id = get_current_user_id();
+		$user_id = self::resolve_member_user_id( $attributes );
+
+		if ( ! $user_id ) {
+			return '';
 		}
 
 		$profile = Profile_Fields::get_member_profile( $user_id );
@@ -119,9 +120,14 @@ final class Blocks {
 	 */
 	public static function render_profile_field( $attributes ) {
 		$field_key = sanitize_key( $attributes['fieldKey'] ?? '' );
-		$user_id   = ! empty( $attributes['userId'] ) ? (int) $attributes['userId'] : get_current_user_id();
-		$field     = Profile_Fields::get_field( $field_key );
-		$user      = get_userdata( $user_id );
+		$user_id   = self::resolve_member_user_id( $attributes );
+
+		if ( '' === $field_key || ! $user_id ) {
+			return '';
+		}
+
+		$field = Profile_Fields::get_field( $field_key );
+		$user  = get_userdata( $user_id );
 
 		if ( ! $field || ! $user ) {
 			return '';
@@ -139,6 +145,38 @@ final class Blocks {
 		}
 
 		return '<div ' . get_block_wrapper_attributes( array( 'class' => 'assemblypress-profile-field' ) ) . '><dl class="assemblypress-profile-field__fields">' . $field_output . '</dl></div>';
+	}
+
+	/**
+	 * Resolve the member user ID for context-aware profile blocks.
+	 *
+	 * A configured user ID is treated as an explicit selection. Empty selected
+	 * user IDs intentionally render nothing instead of falling back to another
+	 * member, because that keeps block configuration mistakes visible in the
+	 * editor without exposing ambiguous frontend output.
+	 *
+	 * @param array $attributes Block attributes.
+	 * @return int
+	 */
+	private static function resolve_member_user_id( $attributes ) {
+		$member_source = isset( $attributes['memberSource'] ) ? sanitize_key( $attributes['memberSource'] ) : 'current';
+		$selected_id   = isset( $attributes['userId'] ) ? absint( $attributes['userId'] ) : 0;
+
+		if ( $selected_id ) {
+			return get_userdata( $selected_id ) ? $selected_id : 0;
+		}
+
+		if ( 'selected' === $member_source ) {
+			return 0;
+		}
+
+		$queried_object = get_queried_object();
+
+		if ( $queried_object instanceof \WP_User ) {
+			return (int) $queried_object->ID;
+		}
+
+		return get_current_user_id();
 	}
 
 	/**
