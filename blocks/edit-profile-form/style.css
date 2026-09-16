@@ -1,0 +1,6 @@
+.assemblypress-edit-profile-form__field { display: flex; flex-direction: column; gap: .4em; margin-block: 0 1em; }
+.assemblypress-edit-profile-form__field input:not([type="checkbox"]), .assemblypress-edit-profile-form__field textarea, .assemblypress-edit-profile-form__field select { box-sizing: border-box; max-width: 100%; font: inherit; }
+.assemblypress-edit-profile-form__field img { width: 96px; height: 96px; object-fit: cover; }
+.assemblypress-edit-profile-form__help { font-size: .875em; }
+.assemblypress-edit-profile-form fieldset { min-width: 0; margin-bottom: 1em; }
+.assemblypress-edit-profile-form__notice { padding: 1em; border: 1px solid currentColor; }

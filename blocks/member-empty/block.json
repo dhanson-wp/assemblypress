@@ -1,0 +1,36 @@
+{
+	"apiVersion": 3,
+	"name": "assemblypress/member-empty",
+	"title": "Member Empty State",
+	"category": "widgets",
+	"icon": "groups",
+	"textdomain": "assemblypress",
+	"supports": {
+		"html": false,
+		"align": [
+			"wide",
+			"full"
+		],
+		"spacing": {
+			"margin": true,
+			"padding": true
+		},
+		"color": {
+			"text": true,
+			"background": true,
+			"link": true
+		},
+		"typography": {
+			"fontSize": true
+		}
+	},
+	"usesContext": [
+		"assemblypress/perPage",
+		"assemblypress/includeAllAccounts",
+		"assemblypress/memberId"
+	],
+	"editorScript": "file:./index.js",
+	"ancestor": [
+		"assemblypress/member-directory"
+	]
+}

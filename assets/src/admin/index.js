@@ -50,6 +50,7 @@ import {
  * Internal dependencies
  */
 import './style.css';
+import { MembersScreen, SettingsScreen, DesignScreen } from './owner-screens';
 
 /* global assemblyPressAdmin */
 
@@ -1285,7 +1286,7 @@ function ProfileFieldsScreen() {
 					<h1>{ __( 'Profile Fields', 'assemblypress' ) }</h1>
 					<p>
 						{ __(
-							'Define the member profile fields used by directories, profile pages, and the temporary profile-value editor.',
+							'Define the information members share in directories and profiles.',
 							'assemblypress'
 						) }
 					</p>
@@ -1485,9 +1486,24 @@ domReady( () => {
 		return;
 	}
 
+	const screen = assemblyPressAdmin.screen || '';
+	let content = <MembersScreen />;
+	if ( screen.includes( '-fields' ) ) {
+		content = <ProfileFieldsScreen />;
+	}
+	if ( screen.includes( '-settings' ) ) {
+		content = <SettingsScreen />;
+	}
+	if ( screen.includes( '-membership' ) ) {
+		content = <MembersScreen membership />;
+	}
+	if ( screen.includes( '-design' ) ) {
+		content = <DesignScreen />;
+	}
+
 	if ( createRoot ) {
-		createRoot( rootElement ).render( <ProfileFieldsScreen /> );
+		createRoot( rootElement ).render( content );
 	} else {
-		render( <ProfileFieldsScreen />, rootElement );
+		render( content, rootElement );
 	}
 } );

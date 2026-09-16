@@ -4,7 +4,7 @@
 
 AssemblyPress is a block-native community platform for WordPress.
 
-Its long-term goal is to become the primary open-source community plugin for WordPress. The current implementation slice is narrower: a Member/Profile Foundation built on WordPress users for identity and AssemblyPress-owned profile schema, values, visibility, directory, profile, and editing surfaces.
+The MVP is a Member Directory that helps people find other members and view their profiles. Profile maintenance and membership administration support that experience. WordPress users provide identity; AssemblyPress owns profile schema, values, directory presentation, and joining workflows.
 
 AssemblyPress should make WordPress feel like the best place to build an owned community again.
 
@@ -28,7 +28,7 @@ AssemblyPress should avoid shortcode-first thinking, isolated custom app shells,
 
 ## Current Slice
 
-The first real implementation slice is the Member/Profile Foundation.
+The current implementation is the Member Directory MVP.
 
 In scope now:
 
@@ -40,7 +40,9 @@ In scope now:
 - public member profile reads
 - current-member profile writes
 - member directory/profile blocks
-- DataViews/DataForm admin for profile schema
+- DataViews/DataForm admin for members, profile schema, invitations, and membership requests
+- registration, email activation, invitations, and owner approval
+- owner settings for access, eligibility, and directory filters
 
 Profile form configuration is experimental until the Jetpack Forms-derived architecture is ready.
 
@@ -64,9 +66,9 @@ Use DataViews for profile schema collections and future structured management su
 
 Forum, moderation, and audit management surfaces belong to the later Forum architecture build, not the current Member/Profile Foundation.
 
-## Strategic Anti-References
+## Workflow references
 
-BuddyPress and bbPress are the main strategic anti-references.
+BuddyPress is a reference for member administration, profiles, and joining workflows. AssemblyPress expresses these workflows through current WordPress components, DataViews, blocks, and templates.
 
 Avoid:
 
@@ -101,6 +103,10 @@ The first foundation version should prove the member/profile loop:
 
 Everything else should support that loop.
 
+## First Viable Version
+
+The release target is a usable member directory with owner administration, registration, activation, invitations, and membership requests. Owners can define profile fields, manage members, choose access rules, and compose directory/profile patterns. Members can join, maintain their information, find others, and return from profiles to their search results.
+
 Quarantined for later architecture:
 
 - spaces or groups
@@ -109,7 +115,7 @@ Quarantined for later architecture:
 - activity or updates
 - notifications
 - moderation queues
-- onboarding and setup
+- broader onboarding beyond membership registration
 - transitions and audit events
 
 ## Success Criteria
@@ -123,3 +129,35 @@ AssemblyPress succeeds when a WordPress user can:
 - manage profile schema with modern WordPress UI
 - recognize the product as WordPress-native, not a SaaS iframe or custom admin island
 - see a credible path toward a clearer, more coherent, and more native WordPress community product
+
+### Editable member surfaces and maintenance
+
+The Member Directory lists subscribers by default. Its **Include all site accounts** setting is an explicit opt-in to listing other roles, including administrators. Directory eligibility controls discovery, not authorization to visit a profile URL. Search matches public display names only. The public REST member collection follows directory eligibility and audience settings. Authorized administrative selection can include other site accounts.
+
+Site editors can compose the repeated directory card with nested core blocks and Profile Field blocks. Leave member selection on **Automatic member context** for shared layouts. The **Member profile with editable fields** pattern combines a member heading with individually editable fields. Schema remains in AssemblyPress's DataViews interface; layout remains in the Site Editor.
+
+Member maintenance is a fixed schema adapter, not a form builder. It uses the same field definitions and validation as REST profile updates. A future Jetpack Forms-derived renderer can replace this adapter without migrating profile values or introducing another schema. Members cannot override the owner's field visibility in this slice. Public fields are visible to visitors; private fields are available only to the member and authorized editors. Empty optional fields can be left blank.
+
+Profile images use a restricted frontend upload handler: authenticated self-editing, nonce verification, JPEG/PNG/WebP content checks, a 2 MB limit (or the host's lower upload limit), and a 4096-pixel dimension limit. This does not grant access to the media library or the general upload capability. Images are publicly accessible media, so private image fields cannot accept uploads. Removing a profile image clears the association without deleting shared media; failed saves delete only files uploaded in that request. Validation failures keep submitted text in the current request, rather than putting private values in URLs or persistent draft storage. File selections must be chosen again after an error.
+
+The enhanced member image control uses WordPress components for upload, replacement, removal, and Undo. Image changes are staged alongside other profile fields until **Save profile**; selecting a replacement displays a local preview. The native file field remains available without JavaScript.
+
+### Owner workflows and design freedom
+
+AssemblyPress opens on **Members**. Its DataViews list defaults to directory members; removing the Directory filter reveals all site accounts, with an explanation of role-based exclusion. Owners can edit profile values through DataForm, including owner-only fields, or open the public profile or WordPress account.
+
+**Profile Fields** retains the schema editor. **Invitations and requests** manages joining records. **Settings** controls joining mode, directory/profile audience, eligible roles, page destinations, and public select-field filters. **Design** links to native page, template, and pattern editors.
+
+The Member Directory pattern contains independent Search and Filters, Result Count, Results, Empty State, and Pagination blocks. Owners can rearrange these through core layout blocks, design the repeated card, choose its column count, and create their own patterns. Profile Field blocks support labels, linked names/images, and name heading levels. Member Navigation provides a local return link that retains the directory query. Existing card-only directory layouts continue to render.
+
+### Joining and access
+
+Joining defaults to closed. Owners can choose open registration, invitation-only access, or email verification followed by approval. Invitations remain an explicit owner action in every mode. Registration uses a fixed block adapter, not a separate form builder.
+
+Pending joining records are private `ap_membership` posts, separate from WordPress identities. An applicant receives a one-day verification link; an invitation expires after seven days. Links contain random tokens stored only as hashes and require an explicit confirmation. Resending rotates the token. Verified requests await approval; approved applicants and invitation recipients receive subscriber accounts and WordPress password-setup emails. No pending account can log in or appear in the directory because no WordPress user exists yet.
+
+Owners can approve, reject, revoke, and resend according to the record's state. Public recovery does not disclose whether an address has an account or a request. Email attempts are rate-limited per recipient, and joining submissions are rate-limited per client address. Owners must configure a working WordPress mail service; acceptance by the mail service does not prove inbox delivery.
+
+After membership settings are saved, core public WordPress registration directs applicants through AssemblyPress instead of bypassing its approval policy. Other plugins that create users require separate integration review. Existing WordPress accounts retain access and are not retroactively required to verify email.
+
+Directories and profiles are public by default. Profiles restricted to signed-in members also restrict directory access. Directory role exclusion does not make direct profile URLs private. Field visibility continues to apply, and public media URLs are not made private by these settings. Members cannot independently override owner-defined visibility in this release.

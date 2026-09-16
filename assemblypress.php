@@ -28,9 +28,17 @@ require_once ASSEMBLYPRESS_PLUGIN_DIR . 'includes/class-profile-field-groups.php
 require_once ASSEMBLYPRESS_PLUGIN_DIR . 'includes/class-profile-fields.php';
 require_once ASSEMBLYPRESS_PLUGIN_DIR . 'includes/class-rest-controller.php';
 require_once ASSEMBLYPRESS_PLUGIN_DIR . 'includes/class-blocks.php';
+require_once ASSEMBLYPRESS_PLUGIN_DIR . 'includes/class-member-profiles.php';
 require_once ASSEMBLYPRESS_PLUGIN_DIR . 'includes/class-admin.php';
+require_once ASSEMBLYPRESS_PLUGIN_DIR . 'includes/class-settings.php';
+require_once ASSEMBLYPRESS_PLUGIN_DIR . 'includes/class-membership.php';
+require_once ASSEMBLYPRESS_PLUGIN_DIR . 'includes/class-owner-api.php';
+require_once ASSEMBLYPRESS_PLUGIN_DIR . 'includes/class-joining.php';
+require_once ASSEMBLYPRESS_PLUGIN_DIR . 'includes/class-directory-blocks.php';
+
 
 register_activation_hook( __FILE__, array( 'AssemblyPress\\Plugin', 'activate' ) );
+register_deactivation_hook( __FILE__, array( 'AssemblyPress\\Member_Profiles', 'deactivate' ) );
 
 add_action(
 	'plugins_loaded',

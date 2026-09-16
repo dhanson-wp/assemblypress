@@ -690,7 +690,7 @@ class ProfileFieldsTest extends WP_UnitTestCase {
 	 *
 	 * @return void
 	 */
-	public function test_edit_profile_form_redirects_validation_errors_without_partial_writes() {
+	public function test_edit_profile_form_preserves_validation_errors_without_partial_writes() {
 		Profile_Fields::seed_defaults();
 
 		$user_id = self::factory()->user->create( array( 'display_name' => 'Before Error' ) );
@@ -702,18 +702,14 @@ class ProfileFieldsTest extends WP_UnitTestCase {
 		$_POST['assemblypress_display_name']  = '';
 		$_POST['assemblypress_location']      = 'Should Not Save';
 
-		$redirect = $this->capture_profile_form_redirect();
-
-		$this->assertStringContainsString( 'assemblypress_profile_status=error', $redirect );
+		Blocks::maybe_handle_edit_profile_form_submission();
 		$this->assertSame( 'Before Error', get_userdata( $user_id )->display_name );
 		$this->assertSame( '', get_user_meta( $user_id, 'assemblypress_location', true ) );
-
-		$this->set_redirect_notice_from_url( $redirect );
 
 		$output = do_blocks( '<!-- wp:assemblypress/edit-profile-form /-->' );
 
 		$this->assertStringContainsString( 'Display name is required.', $output );
-		$this->assertStringContainsString( 'value="Before Error"', $output );
+		$this->assertStringContainsString( 'value="Should Not Save"', $output );
 	}
 
 	/**

@@ -9,7 +9,8 @@
 		"start": "wp-scripts start assets/src/admin/index.js --output-path=assets/build/admin",
 		"lint:js": "wp-scripts lint-js assets/js assets/src blocks",
 		"lint:css": "wp-scripts lint-style '**/*.css'",
-		"test:e2e": "WP_BASE_URL=http://localhost:8890 wp-scripts test-playwright",
+		"playground:demo": "npx -y @wp-playground/cli@latest server --auto-mount --blueprint=blueprints/first-viable-version.json",
+		"test:e2e": "wp-scripts test-playwright",
 		"wp-env": "wp-env"
 	},
 	"devDependencies": {

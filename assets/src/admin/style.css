@@ -1,20 +1,20 @@
 @import "@wordpress/dataviews/build-style/style.css";
 
-body.toplevel_page_assemblypress,
-body.toplevel_page_assemblypress #wpwrap,
-body.toplevel_page_assemblypress #wpcontent,
-body.toplevel_page_assemblypress #wpbody,
-body.toplevel_page_assemblypress #wpbody-content,
-body.toplevel_page_assemblypress #wpfooter {
+body[class*="_page_assemblypress"],
+body[class*="_page_assemblypress"] #wpwrap,
+body[class*="_page_assemblypress"] #wpcontent,
+body[class*="_page_assemblypress"] #wpbody,
+body[class*="_page_assemblypress"] #wpbody-content,
+body[class*="_page_assemblypress"] #wpfooter {
   background: #fff;
 }
 
-body.toplevel_page_assemblypress #wpbody,
-body.toplevel_page_assemblypress #wpbody-content {
+body[class*="_page_assemblypress"] #wpbody,
+body[class*="_page_assemblypress"] #wpbody-content {
   min-height: calc(100vh - 32px);
 }
 
-body.toplevel_page_assemblypress #wpcontent {
+body[class*="_page_assemblypress"] #wpcontent {
   padding-left: 0;
 }
 
@@ -381,3 +381,6 @@ body.toplevel_page_assemblypress #wpcontent {
     width: auto;
   }
 }
+
+.assemblypress-settings-form { max-width: 800px; }
+.assemblypress-settings-form section { display: flex; flex-direction: column; gap: 12px; }

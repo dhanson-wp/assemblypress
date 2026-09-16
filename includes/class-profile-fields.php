@@ -598,6 +598,9 @@ final class Profile_Fields {
 	 * @return array|WP_Error
 	 */
 	public static function get_member_profile( $user_id, $include_priv = false ) {
+		if ( ! Settings::can_browse( 'profile' ) && ! current_user_can( 'edit_user', $user_id ) ) {
+			return new WP_Error( 'assemblypress_profile_private', __( 'Sign in to view member profiles.', 'assemblypress' ), array( 'status' => 403 ) );
+		}
 		$user = get_userdata( $user_id );
 
 		if ( ! $user instanceof WP_User ) {
@@ -622,7 +625,7 @@ final class Profile_Fields {
 			'id'           => $user->ID,
 			'display_name' => $user->display_name,
 			'avatar_url'   => get_avatar_url( $user->ID ),
-			'profile_url'  => get_author_posts_url( $user->ID ),
+			'profile_url'  => Member_Profiles::get_url( $user->ID ),
 			'fields'       => $fields,
 			'groups'       => self::group_fields( $fields ),
 		);
@@ -680,9 +683,10 @@ final class Profile_Fields {
 	 *
 	 * @param int   $user_id User ID.
 	 * @param array $values  Submitted values keyed by field key.
+	 * @param bool  $owner_edit Whether to allow authorized owner-only fields.
 	 * @return array|WP_Error
 	 */
-	public static function update_member_profile( $user_id, $values ) {
+	public static function update_member_profile( $user_id, $values, $owner_edit = false ) {
 		$user = get_userdata( $user_id );
 
 		if ( ! $user instanceof WP_User ) {
@@ -693,7 +697,7 @@ final class Profile_Fields {
 			return new WP_Error( 'assemblypress_invalid_profile_values', __( 'Profile values must be submitted as an object.', 'assemblypress' ), array( 'status' => 400 ) );
 		}
 
-		$updates = self::prepare_member_profile_updates( $values );
+		$updates = self::prepare_member_profile_updates( $values, $owner_edit && current_user_can( 'list_users' ) && current_user_can( 'edit_user', $user_id ) );
 
 		if ( is_wp_error( $updates ) ) {
 			return $updates;
@@ -743,17 +747,26 @@ final class Profile_Fields {
 	 * Prepare editable profile value updates before persisting anything.
 	 *
 	 * @param array $values Submitted values keyed by field key.
+	 * @param bool  $owner_edit Whether to include owner-only fields.
 	 * @return array|WP_Error
 	 */
-	private static function prepare_member_profile_updates( $values ) {
+	private static function prepare_member_profile_updates( $values, $owner_edit = false ) {
 		$updates = array();
 
 		foreach ( self::get_fields() as $field ) {
-			if ( empty( $field['editable'] ) || ! array_key_exists( $field['key'], $values ) ) {
+			if ( ( ! $owner_edit && empty( $field['editable'] ) ) || ! array_key_exists( $field['key'], $values ) ) {
 				continue;
 			}
 
-			$value = self::sanitize_value( $values[ $field['key'] ], $field );
+			$raw = $values[ $field['key'] ];
+			if ( 'social_links' !== $field['type'] && ! is_scalar( $raw ) && null !== $raw ) {
+				return new WP_Error( 'assemblypress_invalid_value', __( 'Enter one value per field.', 'assemblypress' ), array( 'status' => 400 ) );
+			}
+			$value = self::sanitize_value( $raw, $field );
+			if ( ! self::is_empty_value( $raw ) && ( ( 'email' === $field['type'] && ! is_email( $raw ) ) || ( 'url' === $field['type'] && ! ( wp_parse_url( $raw, PHP_URL_HOST ) && in_array( wp_parse_url( $raw, PHP_URL_SCHEME ), array( 'http', 'https' ), true ) ) ) || ( 'select' === $field['type'] && '' === $value ) ) ) {
+				/* translators: %s: Field label. */
+				return new WP_Error( 'assemblypress_invalid_value', sprintf( __( 'Enter a valid value for %s.', 'assemblypress' ), $field['label'] ), array( 'status' => 400 ) );
+			}
 
 			if ( ! empty( $field['required'] ) && self::is_empty_value( $value ) ) {
 				return new WP_Error(

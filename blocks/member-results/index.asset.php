@@ -1,0 +1,5 @@
+<?php
+/** Editor dependencies.
+ * @package AssemblyPress
+ */
+return array( 'dependencies' => array( 'wp-blocks', 'wp-element', 'wp-block-editor', 'wp-i18n', 'wp-components' ), 'version' => '0.1.0' );
