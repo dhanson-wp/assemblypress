@@ -1,0 +1,19 @@
+.wp-block-assemblypress-member-results > ul {
+	display: grid;
+	grid-template-columns: repeat(var(--assemblypress-columns, 1), minmax(0, 1fr));
+	gap: var(--wp--style--block-gap, 1.5rem);
+	list-style: none;
+	padding: 0;
+}
+
+.wp-block-assemblypress-member-results > ul > li {
+	min-width: 0;
+	overflow-wrap: anywhere;
+}
+
+@media (max-width: 600px) {
+
+	.wp-block-assemblypress-member-results > ul {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}

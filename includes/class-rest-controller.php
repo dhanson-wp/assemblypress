@@ -962,6 +962,9 @@ final class Rest_Controller {
 	 * @return array
 	 */
 	public static function get_members( WP_REST_Request $request ) {
+		if ( ! current_user_can( 'list_users' ) && ( ! Settings::can_browse() || ! Settings::can_browse( 'profile' ) ) ) {
+			return new \WP_Error( 'assemblypress_directory_private', __( 'Sign in to browse members.', 'assemblypress' ), array( 'status' => 403 ) );
+		}
 		$requested_per_page = (int) $request->get_param( 'per_page' );
 		$requested_page     = (int) $request->get_param( 'page' );
 		$requested_search   = $request->get_param( 'search' );
@@ -971,12 +974,15 @@ final class Rest_Controller {
 
 		$query = new \WP_User_Query(
 			array(
-				'number'  => $per_page,
-				'paged'   => $page,
-				'search'  => $search ? '*' . $search . '*' : '',
-				'orderby' => 'display_name',
-				'order'   => 'ASC',
-				'fields'  => 'all',
+				'role__in'       => ! current_user_can( 'list_users' ) ? Settings::get()['eligible_roles'] : array(),
+				'include'        => ! current_user_can( 'list_users' ) && ! Settings::get()['eligible_roles'] ? array( 0 ) : array(),
+				'number'         => $per_page,
+				'paged'          => $page,
+				'search'         => $search ? '*' . $search . '*' : '',
+				'search_columns' => array( 'display_name' ),
+				'orderby'        => 'display_name',
+				'order'          => 'ASC',
+				'fields'         => 'all',
 			)
 		);
 

@@ -1,0 +1,21 @@
+{
+	"$schema": "https://playground.wordpress.net/blueprint-schema.json",
+	"meta": {
+		"title": "AssemblyPress first viable version",
+		"description": "Sets up a demo site that proves the AssemblyPress member/profile loop with profile schema, member editing, and public blocks.",
+		"author": "AssemblyPress contributors",
+		"categories": [ "community", "profiles", "blocks" ]
+	},
+	"landingPage": "/member-directory/",
+	"login": true,
+	"preferredVersions": {
+		"php": "8.3",
+		"wp": "latest"
+	},
+	"steps": [
+		{
+			"step": "runPHP",
+			"code": "<?php\nrequire_once '/wordpress/wp-load.php';\nrequire_once ABSPATH . 'wp-admin/includes/plugin.php';\n\n$plugin_path = '';\nforeach ( array( 'assemblypress/assemblypress.php', 'AssemblyPress/assemblypress.php' ) as $candidate ) {\n\tif ( file_exists( WP_PLUGIN_DIR . '/' . $candidate ) ) {\n\t\t$plugin_path = $candidate;\n\t\tbreak;\n\t}\n}\n\nif ( ! $plugin_path ) {\n\tthrow new RuntimeException( 'AssemblyPress is not mounted in wp-content/plugins.' );\n}\n\nif ( ! is_plugin_active( $plugin_path ) ) {\n\t$result = activate_plugin( $plugin_path );\n\n\tif ( is_wp_error( $result ) ) {\n\t\tthrow new RuntimeException( $result->get_error_message() );\n\t}\n}\n\n$setup_file = WP_PLUGIN_DIR . '/' . dirname( $plugin_path ) . '/blueprints/first-viable-version.php';\n\nif ( ! file_exists( $setup_file ) ) {\n\tthrow new RuntimeException( 'AssemblyPress demo setup file is missing.' );\n}\n\nrequire $setup_file;"
+		}
+	]
+}

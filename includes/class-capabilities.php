@@ -16,12 +16,9 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 final class Capabilities {
 	/**
-	 * Temporary capability for managing profile schema.
-	 *
-	 * This currently maps to a core user-management capability until
-	 * AssemblyPress introduces product-specific capabilities.
+	 * Capability for managing profile schema.
 	 */
-	const MANAGE_PROFILE_SCHEMA = 'list_users';
+	const MANAGE_PROFILE_SCHEMA = 'manage_assemblypress_profile_schema';
 
 	/**
 	 * Get the capability required to manage profile schema.
@@ -39,5 +36,18 @@ final class Capabilities {
 	 */
 	public static function current_user_can_manage_profile_schema() {
 		return current_user_can( self::manage_profile_schema() );
+	}
+
+	/**
+	 * Grant AssemblyPress capabilities to default WordPress roles.
+	 *
+	 * @return void
+	 */
+	public static function grant_default_role_capabilities() {
+		$role = get_role( 'administrator' );
+
+		if ( $role && ! $role->has_cap( self::MANAGE_PROFILE_SCHEMA ) ) {
+			$role->add_cap( self::MANAGE_PROFILE_SCHEMA );
+		}
 	}
 }

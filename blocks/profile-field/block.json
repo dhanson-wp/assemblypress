@@ -15,6 +15,18 @@
 		"userId": {
 			"type": "number",
 			"default": 0
+		},
+		"linkToProfile": {
+			"type": "boolean",
+			"default": false
+		},
+		"showLabel": {
+			"type": "boolean",
+			"default": true
+		},
+		"headingLevel": {
+			"type": "number",
+			"default": 0
 		}
 	},
 	"supports": {
@@ -24,10 +36,19 @@
 		},
 		"typography": {
 			"fontSize": true
+		},
+		"color": {
+			"text": true,
+			"background": true,
+			"link": true
 		}
 	},
 	"editorScript": "file:./index.js",
 	"editorStyle": "file:./editor.css",
 	"style": "file:./style.css",
-	"render": "file:./render.php"
+	"render": "file:./render.php",
+	"usesContext": [
+		"assemblypress/memberId",
+		"assemblypress/inDirectory"
+	]
 }

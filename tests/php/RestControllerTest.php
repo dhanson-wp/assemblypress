@@ -35,6 +35,8 @@ class RestControllerTest extends WP_UnitTestCase {
 	public function set_up() {
 		parent::set_up();
 
+		Capabilities::grant_default_role_capabilities();
+
 		$this->admin_id      = self::factory()->user->create( array( 'role' => 'administrator' ) );
 		$this->subscriber_id = self::factory()->user->create( array( 'role' => 'subscriber' ) );
 	}
@@ -54,12 +56,12 @@ class RestControllerTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Profile schema management capability maps to the current temporary capability.
+	 * Profile schema management uses an AssemblyPress product capability.
 	 *
 	 * @return void
 	 */
-	public function test_profile_schema_management_capability_maps_to_list_users_for_now() {
-		$this->assertSame( 'list_users', Capabilities::manage_profile_schema() );
+	public function test_profile_schema_management_capability_uses_assemblypress_capability() {
+		$this->assertSame( 'manage_assemblypress_profile_schema', Capabilities::manage_profile_schema() );
 
 		wp_set_current_user( $this->subscriber_id );
 		$this->assertFalse( Capabilities::current_user_can_manage_profile_schema() );

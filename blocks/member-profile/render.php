@@ -5,4 +5,4 @@
  * @package AssemblyPress
  */
 
-echo AssemblyPress\Blocks::render_member_profile( $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+echo AssemblyPress\Blocks::render_member_profile( $attributes, $block ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped

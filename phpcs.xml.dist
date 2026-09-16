@@ -2,6 +2,7 @@
 <ruleset name="AssemblyPress">
 	<description>AssemblyPress coding standards.</description>
 	<file>assemblypress.php</file>
+	<file>blueprints/first-viable-version.php</file>
 	<file>includes</file>
 	<rule ref="WordPress"/>
 	<rule ref="WordPress-Extra"/>

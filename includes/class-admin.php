@@ -26,12 +26,21 @@ final class Admin {
 		add_menu_page(
 			__( 'AssemblyPress', 'assemblypress' ),
 			__( 'AssemblyPress', 'assemblypress' ),
-			Capabilities::manage_profile_schema(),
+			'list_users',
 			self::PAGE_SLUG,
 			array( self::class, 'render_screen' ),
 			'dashicons-groups',
 			58
 		);
+		foreach ( array(
+			'assemblypress'            => array( __( 'Members', 'assemblypress' ), 'list_users' ),
+			'assemblypress-fields'     => array( __( 'Profile Fields', 'assemblypress' ), Capabilities::manage_profile_schema() ),
+			'assemblypress-membership' => array( __( 'Invitations and requests', 'assemblypress' ), 'manage_options' ),
+			'assemblypress-settings'   => array( __( 'Settings', 'assemblypress' ), 'manage_options' ),
+			'assemblypress-design'     => array( __( 'Design', 'assemblypress' ), 'edit_theme_options' ),
+		) as $slug => $page ) {
+			add_submenu_page( self::PAGE_SLUG, $page[0], $page[0], $page[1], $slug, array( self::class, 'render_screen' ) );
+		}
 	}
 
 	/**
@@ -41,7 +50,7 @@ final class Admin {
 	 * @return void
 	 */
 	public static function enqueue_assets( $hook_suffix ) {
-		if ( 'toplevel_page_' . self::PAGE_SLUG !== $hook_suffix ) {
+		if ( false === strpos( $hook_suffix, 'assemblypress' ) ) {
 			return;
 		}
 
@@ -54,6 +63,8 @@ final class Admin {
 			);
 
 		wp_enqueue_style( 'wp-components' );
+		if ( current_user_can( 'upload_files' ) ) {
+			wp_enqueue_media(); }
 
 		$style_path = ASSEMBLYPRESS_PLUGIN_DIR . 'assets/build/admin/style-index.css';
 		if ( file_exists( $style_path ) ) {
@@ -77,9 +88,29 @@ final class Admin {
 			'assemblypress-admin',
 			'assemblyPressAdmin',
 			array(
-				'restUrl'  => esc_url_raw( rest_url( Rest_Controller::NAMESPACE ) ),
-				'adminUrl' => esc_url_raw( admin_url() ),
-				'nonce'    => wp_create_nonce( 'wp_rest' ),
+				'restUrl'            => esc_url_raw( rest_url( Rest_Controller::NAMESPACE ) ),
+				'adminUrl'           => esc_url_raw( admin_url() ),
+				'screen'             => get_current_screen()->id,
+				'directoryUrl'       => Settings::directory_url(),
+				'directoryEdit'      => Settings::get()['directory_page'] ? get_edit_post_link( Settings::get()['directory_page'], 'raw' ) : admin_url( 'post-new.php?post_type=page' ),
+				'profileTemplateUrl' => add_query_arg(
+					array(
+						'postType' => 'wp_template',
+						'canvas'   => 'edit',
+						'postId'   => get_stylesheet() . '//assemblypress-member-profile',
+					),
+					admin_url( 'site-editor.php' )
+				),
+				'editTemplateUrl'    => add_query_arg(
+					array(
+						'postType' => 'wp_template',
+						'canvas'   => 'edit',
+						'postId'   => get_stylesheet() . '//assemblypress-edit-profile',
+					),
+					admin_url( 'site-editor.php' )
+				),
+				'canInvite'          => current_user_can( 'create_users' ),
+				'nonce'              => wp_create_nonce( 'wp_rest' ),
 			)
 		);
 	}

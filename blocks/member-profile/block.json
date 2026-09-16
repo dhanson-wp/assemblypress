@@ -11,20 +11,35 @@
 		"userId": {
 			"type": "number",
 			"default": 0
+		},
+		"showFields": {
+			"type": "boolean",
+			"default": true
 		}
 	},
 	"supports": {
-		"align": [ "wide", "full" ],
+		"align": [
+			"wide",
+			"full"
+		],
 		"spacing": {
 			"margin": true,
 			"padding": true
 		},
 		"typography": {
 			"fontSize": true
+		},
+		"color": {
+			"text": true,
+			"background": true,
+			"link": true
 		}
 	},
 	"editorScript": "file:./index.js",
 	"editorStyle": "file:./editor.css",
 	"style": "file:./style.css",
-	"render": "file:./render.php"
+	"render": "file:./render.php",
+	"usesContext": [
+		"assemblypress/memberId"
+	]
 }

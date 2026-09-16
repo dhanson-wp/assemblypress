@@ -17,6 +17,7 @@ Common local commands:
 - `composer lint` runs PHPCS.
 - `composer test` runs PHPUnit inside the `wp-env` `tests-cli` container.
 - `composer test:local` runs plain `phpunit` and is only for a manually configured local WordPress test suite with `WP_TESTS_DIR`.
+- `npm run test:e2e` runs browser regressions. `WP_BASE_URL` can override the default URL; it must match the development site's `WP_HOME` and `WP_SITEURL`. Keep machine-specific URL overrides in the ignored `.wp-env.override.json`.
 
 ## Repo Boundaries
 
@@ -96,7 +97,7 @@ For data flows:
 - mutations enforce capability checks and nonces
 - input is sanitized and output is escaped
 
-Profile schema management currently uses `AssemblyPress\Capabilities::manage_profile_schema()`, which maps to `list_users` as a temporary first-slice permission. Replace that mapping with an AssemblyPress-specific capability before expanding the permission model.
+Profile schema management uses `AssemblyPress\Capabilities::manage_profile_schema()`, which maps to the AssemblyPress-specific `manage_assemblypress_profile_schema` capability. AssemblyPress grants that capability to administrators during activation and idempotently during plugin startup so existing local installs receive it after an update.
 
 Current storage:
 
@@ -126,6 +127,7 @@ PHPUnit runs through the `wp-env` tests container so the WordPress test suite an
 - Start the environment with `npm run wp-env start` when needed.
 - Run PHP tests with `composer test`; this executes PHPUnit inside `wp-env`'s `tests-cli` container.
 - If you have a separate local WordPress test suite configured, `composer test:local` still runs plain `phpunit` and respects `WP_TESTS_DIR`.
+- Run `npm run playground:demo` for a disposable WordPress Playground demo of the first viable member/profile loop.
 
 ## Remaining Setup Decisions
 
@@ -134,3 +136,18 @@ The active repo name, plugin slug, PHP namespace, JavaScript package namespace, 
 - formal minimum supported WordPress version
 - formal release support policy for PHP beyond the current Composer constraint
 - whether later, out-of-scope community entities need taxonomies
+
+## Directory membership resources
+
+Owner REST endpoints use normal WordPress cookie/nonces or supported REST authentication:
+
+- `GET/POST /assemblypress/v1/settings` requires `manage_options`.
+- `GET /assemblypress/v1/admin/members` requires `list_users` and accepts pagination, search, and eligibility filters.
+- `GET/POST /assemblypress/v1/admin/members/<id>` also requires permission to edit that site user. Owner updates can include fields that members cannot edit.
+- `GET /assemblypress/v1/admin/membership`, `POST /assemblypress/v1/admin/invitations`, and `POST /assemblypress/v1/admin/membership/<id>` require both `manage_options` and `create_users`.
+
+Joining records are private posts with states `invited`, `pending_email`, `pending_review`, `approved`, `active`, `rejected`, and `revoked`. `approved` indicates verified identity awaiting account creation or recovery from a conflict. Tokens are hashed, expiring, and rotated on resend. Per-record and per-identity locks serialize mutations. Unexpected PHP process termination can leave a lock option that an operator must investigate before removal.
+
+Public registration and confirmation use nonce-protected forms. Email GET links render confirmation without consuming the token. Confirmation surfaces disable caching and referrer forwarding. Registration records do not confer login access. WordPress password setup follows account creation.
+
+Browser tests cover owner configuration, member editing, registration/approval, invitations, legacy and composable directories, profile maintenance, and mobile keyboard navigation. Membership browser tests temporarily capture only their own test-recipient mail in wp-env and remove the fixture afterward; they do not verify an external SMTP service. Docker must be available on `PATH`. Set `WP_ARTIFACTS_PATH` to keep browser artifacts outside the source tree; traces may contain authentication or one-use test links.

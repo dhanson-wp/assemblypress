@@ -4,9 +4,10 @@ AssemblyPress is a public WordPress plugin repository for a block-native communi
 
 ## Current Product Slice
 
-The active implementation slice is the Member/Profile Foundation:
+The active implementation slice is the Member Directory MVP:
 
 - WordPress users provide identity.
+- Registration, email activation, invitations, membership requests, and owner administration support directory membership. Pending joining records do not create WordPress accounts until verified and approved.
 - AssemblyPress owns profile field groups, profile fields, field options, profile values, visibility, member profile read/write flows, member directory/profile blocks, and the DataViews/DataForm admin surface for profile schema.
 - Profile values currently use registered WordPress user meta.
 - Profile schema currently uses private AssemblyPress config CPTs for profile field groups and profile fields.

@@ -8,7 +8,10 @@
 	"description": "Temporary surface for testing editable AssemblyPress profile values.",
 	"textdomain": "assemblypress",
 	"supports": {
-		"align": [ "wide", "full" ],
+		"align": [
+			"wide",
+			"full"
+		],
 		"spacing": {
 			"margin": true,
 			"padding": true
@@ -19,5 +22,7 @@
 	},
 	"editorScript": "file:./index.js",
 	"editorStyle": "file:./editor.css",
-	"render": "file:./render.php"
+	"render": "file:./render.php",
+	"style": "file:./style.css",
+	"viewScript": "file:./view.js"
 }
